@@ -129,7 +129,10 @@ export function MovieDetailScreen({navigation, route}: Props) {
           <Text style={styles.ticketsButtonText}>Get Tickets</Text>
         </Pressable>
 
-        <TrailerButton available={Boolean(movie.trailerVideoKey)} />
+        <TrailerButton
+          available={Boolean(movie.trailerVideoKey)}
+          onPress={() => navigation.navigate('Trailer', {movieId: movie.id})}
+        />
 
         {movie.genres.length > 0 && (
           <View style={styles.section}>

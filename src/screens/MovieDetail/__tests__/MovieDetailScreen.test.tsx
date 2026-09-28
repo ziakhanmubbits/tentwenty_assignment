@@ -37,7 +37,8 @@ const fullMovie: MovieDetail = {
 
 function renderScreen(movieId = 42) {
   const goBack = jest.fn();
-  const navigation = {goBack} as unknown as Props['navigation'];
+  const navigate = jest.fn();
+  const navigation = {goBack, navigate} as unknown as Props['navigation'];
   const route = {params: {movieId}} as unknown as Props['route'];
   let renderer: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
@@ -47,7 +48,7 @@ function renderScreen(movieId = 42) {
       </SafeAreaProvider>,
     );
   });
-  return {renderer: renderer!, goBack};
+  return {renderer: renderer!, goBack, navigate};
 }
 
 function flushMicrotasks() {
@@ -127,6 +128,19 @@ describe('MovieDetailScreen', () => {
     });
 
     expect(goBack).toHaveBeenCalled();
+  });
+
+  it('navigates to Trailer with the movie id when Watch Trailer is pressed', async () => {
+    mockFetchMovieDetail.mockResolvedValue(fullMovie);
+    const {renderer, navigate} = renderScreen();
+    await flushMicrotasks();
+
+    const trailerButton = renderer.root.findByProps({accessibilityLabel: 'Watch Trailer'});
+    act(() => {
+      trailerButton.props.onPress();
+    });
+
+    expect(navigate).toHaveBeenCalledWith('Trailer', {movieId: 42});
   });
 
   it('shows the trailer as unavailable when no trailer key is present', async () => {

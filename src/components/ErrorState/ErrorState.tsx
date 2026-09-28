@@ -5,18 +5,19 @@ import {colors, spacing} from '../../theme';
 interface ErrorStateProps {
   message: string;
   onRetry: () => void;
+  actionLabel?: string;
 }
 
-export function ErrorState({message, onRetry}: ErrorStateProps) {
+export function ErrorState({message, onRetry, actionLabel = 'Try again'}: ErrorStateProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.message}>{message}</Text>
       <Pressable
         onPress={onRetry}
         accessibilityRole="button"
-        accessibilityLabel="Try again"
+        accessibilityLabel={actionLabel}
         style={styles.button}>
-        <Text style={styles.buttonText}>Try again</Text>
+        <Text style={styles.buttonText}>{actionLabel}</Text>
       </Pressable>
     </View>
   );

@@ -3,17 +3,14 @@ import {tmdbImageUrl} from '../client/tmdbImage';
 import type {TMDbMovieDetail} from '../types/movieDetail';
 import type {TMDbImage, TMDbImagesResponse} from '../types/movieImages';
 import type {TMDbVideosResponse} from '../types/movieVideos';
+import {selectTrailerVideo} from '../utils/selectTrailerVideo';
 import type {MovieDetail} from '../../../types/movie';
 
 function selectTrailerKey(response: TMDbVideosResponse | null): string | null {
   if (!response) {
     return null;
   }
-  const trailers = response.results.filter(
-    video => video.site === 'YouTube' && video.type === 'Trailer',
-  );
-  const official = trailers.find(video => video.official);
-  return (official ?? trailers[0])?.key ?? null;
+  return selectTrailerVideo(response.results)?.key ?? null;
 }
 
 function selectLogoUrl(response: TMDbImagesResponse | null): string | null {

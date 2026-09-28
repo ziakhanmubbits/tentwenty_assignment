@@ -93,7 +93,7 @@ describe('fetchMovieDetail', () => {
     expect(movie.trailerVideoKey).toBe('first-key');
   });
 
-  it('returns null trailer when no YouTube trailer exists', async () => {
+  it('falls back to another YouTube video when no trailer or teaser exists', async () => {
     mockEndpoints({
       videos: {
         id: 1,
@@ -102,6 +102,12 @@ describe('fetchMovieDetail', () => {
         ],
       },
     });
+    const movie = await fetchMovieDetail(1);
+    expect(movie.trailerVideoKey).toBe('clip-key');
+  });
+
+  it('returns null trailer when there are no videos at all', async () => {
+    mockEndpoints({videos: {id: 1, results: []}});
     const movie = await fetchMovieDetail(1);
     expect(movie.trailerVideoKey).toBeNull();
   });
