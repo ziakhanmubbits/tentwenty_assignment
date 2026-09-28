@@ -7,3 +7,10 @@ export interface Movie {
   posterUrl: string | null;
   backdropUrl: string | null;
 }
+
+export interface MovieDetail extends Movie {
+  runtime: number | null;
+  genres: string[];
+  logoUrl: string | null;
+  trailerVideoKey: string | null;
+}

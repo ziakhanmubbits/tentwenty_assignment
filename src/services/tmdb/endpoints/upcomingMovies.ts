@@ -1,8 +1,7 @@
 import {tmdbGet} from '../client/tmdbClient';
+import {tmdbImageUrl} from '../client/tmdbImage';
 import type {TMDbMovie, TMDbUpcomingMoviesResponse} from '../types/upcomingMovies';
 import type {Movie} from '../../../types/movie';
-
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 function mapTMDbMovieToMovie(raw: TMDbMovie): Movie {
   return {
@@ -11,8 +10,8 @@ function mapTMDbMovieToMovie(raw: TMDbMovie): Movie {
     releaseDate: raw.release_date,
     overview: raw.overview,
     voteAverage: raw.vote_average,
-    posterUrl: raw.poster_path ? `${IMAGE_BASE_URL}/w342${raw.poster_path}` : null,
-    backdropUrl: raw.backdrop_path ? `${IMAGE_BASE_URL}/w780${raw.backdrop_path}` : null,
+    posterUrl: tmdbImageUrl(raw.poster_path, 'w342'),
+    backdropUrl: tmdbImageUrl(raw.backdrop_path, 'w780'),
   };
 }
 
