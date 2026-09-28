@@ -8,6 +8,7 @@ import {ErrorState} from '../../components/ErrorState';
 import {Header} from '../../components/Header';
 import {LoadingState} from '../../components/LoadingState';
 import {MovieCard} from '../../components/MovieCard';
+import {OfflineBanner} from '../../components/OfflineBanner';
 import {useUpcomingMovies} from '../../hooks/useUpcomingMovies';
 import type {RootStackParamList} from '../../navigation/AppNavigator/types';
 import {colors, spacing} from '../../theme';
@@ -16,7 +17,7 @@ import type {Movie} from '../../types/movie';
 type Props = NativeStackScreenProps<RootStackParamList, 'MovieList'>;
 
 export function MovieListScreen({navigation}: Props) {
-  const {status, movies, error, retry} = useUpcomingMovies();
+  const {status, movies, error, isOffline, cachedAt, retry} = useUpcomingMovies();
 
   const handleSelectMovie = useCallback(
     (movie: Movie) => {
@@ -35,6 +36,9 @@ export function MovieListScreen({navigation}: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header title="Watch" />
+      {status === 'success' && isOffline && cachedAt && (
+        <OfflineBanner cachedAt={cachedAt} />
+      )}
       <View style={styles.content}>
         {status === 'loading' && <LoadingState />}
         {status === 'error' && (

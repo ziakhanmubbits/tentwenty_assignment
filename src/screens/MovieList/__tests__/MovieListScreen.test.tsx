@@ -2,16 +2,31 @@ import React from 'react';
 import ReactTestRenderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 import {MovieListScreen} from '../MovieListScreen';
 import {fetchUpcomingMovies} from '../../../services/tmdb/endpoints/upcomingMovies';
+import {
+  loadUpcomingMoviesCache,
+  saveUpcomingMoviesCache,
+} from '../../../services/storage';
 import type {Movie} from '../../../types/movie';
 import type {RootStackParamList} from '../../../navigation/AppNavigator/types';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 jest.mock('../../../services/tmdb/endpoints/upcomingMovies');
+jest.mock('../../../services/storage');
 
 const mockFetchUpcomingMovies = fetchUpcomingMovies as jest.MockedFunction<
   typeof fetchUpcomingMovies
+>;
+const mockLoadCache = loadUpcomingMoviesCache as jest.MockedFunction<
+  typeof loadUpcomingMoviesCache
+>;
+const mockSaveCache = saveUpcomingMoviesCache as jest.MockedFunction<
+  typeof saveUpcomingMoviesCache
+>;
+const mockNetInfoFetch = NetInfo.fetch as jest.MockedFunction<
+  typeof NetInfo.fetch
 >;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MovieList'>;
@@ -42,6 +57,16 @@ const mockMovies: Movie[] = [
   },
 ];
 
+const cachedMovie: Movie = {
+  id: 3,
+  title: 'Jojo Rabbit',
+  releaseDate: '2019-10-18',
+  overview: '',
+  voteAverage: 8.0,
+  posterUrl: null,
+  backdropUrl: 'https://image.tmdb.org/t/p/w780/jojorabbit.jpg',
+};
+
 function renderScreen() {
   const navigate = jest.fn();
   const navigation = {navigate} as unknown as Props['navigation'];
@@ -61,17 +86,28 @@ function flushMicrotasks() {
   return act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
   });
 }
 
 describe('MovieListScreen', () => {
-  afterEach(() => {
-    mockFetchUpcomingMovies.mockReset();
+  beforeEach(() => {
+    mockLoadCache.mockResolvedValue(null);
+    mockSaveCache.mockResolvedValue(undefined);
+    mockNetInfoFetch.mockResolvedValue({isConnected: true} as never);
   });
 
-  it('shows a loading state before the request resolves', () => {
+  afterEach(() => {
+    mockFetchUpcomingMovies.mockReset();
+    mockLoadCache.mockReset();
+    mockSaveCache.mockReset();
+    mockNetInfoFetch.mockReset();
+  });
+
+  it('shows a loading state before the request resolves', async () => {
     mockFetchUpcomingMovies.mockReturnValue(new Promise(() => {}));
     const {renderer} = renderScreen();
+    await flushMicrotasks();
     expect(renderer.root.findByProps({accessibilityRole: 'progressbar'})).toBeTruthy();
   });
 
@@ -85,6 +121,14 @@ describe('MovieListScreen', () => {
     expect(texts).toContain("The King's Man");
   });
 
+  it('caches successfully fetched movies', async () => {
+    mockFetchUpcomingMovies.mockResolvedValue(mockMovies);
+    renderScreen();
+    await flushMicrotasks();
+
+    expect(mockSaveCache).toHaveBeenCalledWith(mockMovies);
+  });
+
   it('shows an empty state when there are no upcoming movies', async () => {
     mockFetchUpcomingMovies.mockResolvedValue([]);
     const {renderer} = renderScreen();
@@ -94,7 +138,7 @@ describe('MovieListScreen', () => {
     expect(texts).toContain('No upcoming movies right now.');
   });
 
-  it('shows an error state with a retry action when the request fails', async () => {
+  it('shows an error state with a retry action when the request fails and there is no cache', async () => {
     mockFetchUpcomingMovies.mockRejectedValue(new Error('network down'));
     const {renderer} = renderScreen();
     await flushMicrotasks();
@@ -106,6 +150,61 @@ describe('MovieListScreen', () => {
     ).toBeTruthy();
   });
 
+  it('shows an error state when offline and there is no cache', async () => {
+    mockNetInfoFetch.mockResolvedValue({isConnected: false} as never);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    expect(mockFetchUpcomingMovies).not.toHaveBeenCalled();
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain("You're offline and no saved movies are available.");
+  });
+
+  it('shows cached movies with an offline banner when the request fails but cache exists', async () => {
+    mockLoadCache.mockResolvedValue({
+      version: 1,
+      cachedAt: new Date().toISOString(),
+      movies: [cachedMovie],
+    });
+    mockFetchUpcomingMovies.mockRejectedValue(new Error('network down'));
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Jojo Rabbit');
+    expect(texts).toContain("You're offline. Showing saved movies.");
+  });
+
+  it('shows cached movies without attempting a request when NetInfo reports no connection', async () => {
+    mockLoadCache.mockResolvedValue({
+      version: 1,
+      cachedAt: new Date().toISOString(),
+      movies: [cachedMovie],
+    });
+    mockNetInfoFetch.mockResolvedValue({isConnected: false} as never);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    expect(mockFetchUpcomingMovies).not.toHaveBeenCalled();
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Jojo Rabbit');
+  });
+
+  it('replaces cached movies with fresh network data when the request succeeds', async () => {
+    mockLoadCache.mockResolvedValue({
+      version: 1,
+      cachedAt: new Date().toISOString(),
+      movies: [cachedMovie],
+    });
+    mockFetchUpcomingMovies.mockResolvedValue(mockMovies);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Free Guy');
+    expect(texts).not.toContain('Jojo Rabbit');
+  });
+
   it('retries the request when the retry action is pressed', async () => {
     mockFetchUpcomingMovies.mockRejectedValueOnce(new Error('network down'));
     mockFetchUpcomingMovies.mockResolvedValueOnce(mockMovies);
@@ -115,6 +214,7 @@ describe('MovieListScreen', () => {
     const retryButton = renderer.root.findByProps({accessibilityLabel: 'Try again'});
     await act(async () => {
       retryButton.props.onPress();
+      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
