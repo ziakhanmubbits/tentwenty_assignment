@@ -12,6 +12,7 @@ export class TmdbRequestError extends Error {
 export async function tmdbGet<T>(
   path: string,
   params: Record<string, string | number> = {},
+  signal?: AbortSignal,
 ): Promise<T> {
   const query = new URLSearchParams({
     api_key: TMDB_API_KEY,
@@ -20,7 +21,7 @@ export async function tmdbGet<T>(
     ),
   });
 
-  const response = await fetch(`${BASE_URL}${path}?${query.toString()}`);
+  const response = await fetch(`${BASE_URL}${path}?${query.toString()}`, {signal});
 
   if (!response.ok) {
     throw new TmdbRequestError(

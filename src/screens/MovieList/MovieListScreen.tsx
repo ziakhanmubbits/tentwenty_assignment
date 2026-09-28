@@ -35,7 +35,7 @@ export function MovieListScreen({navigation}: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Header title="Watch" />
+      <Header title="Watch" onSearchPress={() => navigation.navigate('MovieSearch')} />
       {status === 'success' && isOffline && cachedAt && (
         <OfflineBanner cachedAt={cachedAt} />
       )}

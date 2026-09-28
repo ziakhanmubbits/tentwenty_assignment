@@ -240,4 +240,17 @@ describe('MovieListScreen', () => {
 
     expect(navigate).toHaveBeenCalledWith('MovieDetail', {movieId: 1});
   });
+
+  it('navigates to Movie Search when the header search icon is pressed', async () => {
+    mockFetchUpcomingMovies.mockResolvedValue(mockMovies);
+    const {renderer, navigate} = renderScreen();
+    await flushMicrotasks();
+
+    const searchButton = renderer.root.findByProps({accessibilityLabel: 'Search'});
+    act(() => {
+      searchButton.props.onPress();
+    });
+
+    expect(navigate).toHaveBeenCalledWith('MovieSearch');
+  });
 });

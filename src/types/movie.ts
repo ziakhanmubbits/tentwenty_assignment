@@ -14,3 +14,7 @@ export interface MovieDetail extends Movie {
   logoUrl: string | null;
   trailerVideoKey: string | null;
 }
+
+export interface MovieSearchResult extends Movie {
+  genreLabel: string | null;
+}
