@@ -4,7 +4,9 @@ import type {TMDbMovieDetail} from '../types/movieDetail';
 import type {TMDbImage, TMDbImagesResponse} from '../types/movieImages';
 import type {TMDbVideosResponse} from '../types/movieVideos';
 import {selectTrailerVideo} from '../utils/selectTrailerVideo';
-import type {MovieDetail} from '../../../types/movie';
+import type {MovieDetail, MovieVideoSummary} from '../../../types/movie';
+
+const MAX_GALLERY_IMAGES = 8;
 
 function selectTrailerKey(response: TMDbVideosResponse | null): string | null {
   if (!response) {
@@ -22,6 +24,30 @@ function selectLogoUrl(response: TMDbImagesResponse | null): string | null {
     response.logos.find(logo => logo.iso_639_1 === null) ??
     response.logos[0];
   return tmdbImageUrl(preferred.file_path, 'w500');
+}
+
+function mapVideos(response: TMDbVideosResponse | null): MovieVideoSummary[] {
+  if (!response) {
+    return [];
+  }
+  return response.results
+    .filter(video => video.site === 'YouTube')
+    .map(video => ({
+      key: video.key,
+      name: video.name,
+      type: video.type,
+      thumbnailUrl: `https://img.youtube.com/vi/${video.key}/hqdefault.jpg`,
+    }));
+}
+
+function mapGalleryImages(response: TMDbImagesResponse | null): string[] {
+  if (!response) {
+    return [];
+  }
+  return response.backdrops
+    .slice(0, MAX_GALLERY_IMAGES)
+    .map(image => tmdbImageUrl(image.file_path, 'w780'))
+    .filter((url): url is string => url !== null);
 }
 
 export async function fetchMovieDetail(movieId: number): Promise<MovieDetail> {
@@ -43,5 +69,7 @@ export async function fetchMovieDetail(movieId: number): Promise<MovieDetail> {
     genres: detail.genres?.map(genre => genre.name) ?? [],
     trailerVideoKey: selectTrailerKey(videos),
     logoUrl: selectLogoUrl(images),
+    videos: mapVideos(videos),
+    galleryImages: mapGalleryImages(images),
   };
 }

@@ -10,14 +10,29 @@ interface TrailerVideoState {
   error: string | null;
 }
 
-export function useTrailerVideo(movieId: number) {
-  const [state, setState] = useState<TrailerVideoState>({
-    status: 'loading',
-    video: null,
-    error: null,
-  });
+function overrideAsVideo(videoKey: string): TMDbVideo {
+  return {
+    id: videoKey,
+    key: videoKey,
+    name: '',
+    site: 'YouTube',
+    type: 'Trailer',
+    official: false,
+  };
+}
+
+export function useTrailerVideo(movieId: number, overrideVideoKey?: string) {
+  const [state, setState] = useState<TrailerVideoState>(() =>
+    overrideVideoKey
+      ? {status: 'success', video: overrideAsVideo(overrideVideoKey), error: null}
+      : {status: 'loading', video: null, error: null},
+  );
 
   const load = useCallback(async () => {
+    if (overrideVideoKey) {
+      setState({status: 'success', video: overrideAsVideo(overrideVideoKey), error: null});
+      return;
+    }
     setState({status: 'loading', video: null, error: null});
     try {
       const video = await fetchMovieTrailerVideo(movieId);
@@ -33,7 +48,7 @@ export function useTrailerVideo(movieId: number) {
         error: "Couldn't load trailer.",
       });
     }
-  }, [movieId]);
+  }, [movieId, overrideVideoKey]);
 
   useEffect(() => {
     load();

@@ -5,6 +5,7 @@ function video(overrides: Partial<TMDbVideo>): TMDbVideo {
   return {
     id: 'id',
     key: 'key',
+    name: 'Video',
     site: 'YouTube',
     type: 'Trailer',
     official: false,

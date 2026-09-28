@@ -15,9 +15,11 @@ import {ErrorState} from '../../components/ErrorState';
 import {GenreList} from '../../components/GenreList';
 import {LoadingState} from '../../components/LoadingState';
 import {TrailerButton} from '../../components/TrailerButton';
+import {VideoThumbnail} from '../../components/VideoThumbnail';
 import {useMovieDetail} from '../../hooks/useMovieDetail';
 import type {RootStackParamList} from '../../navigation/AppNavigator/types';
 import {colors, spacing} from '../../theme';
+import type {MovieVideoSummary} from '../../types/movie';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MovieDetail'>;
 
@@ -77,6 +79,10 @@ export function MovieDetailScreen({navigation, route}: Props) {
 
   const heroImageUrl = movie.backdropUrl ?? movie.posterUrl;
   const releaseDateLabel = formatReleaseDate(movie.releaseDate);
+
+  const handleSelectVideo = (video: MovieVideoSummary) => {
+    navigation.navigate('Trailer', {movieId: movie.id, videoKey: video.key});
+  };
 
   return (
     <View style={[styles.container, isLandscape && styles.containerLandscape]}>
@@ -153,6 +159,37 @@ export function MovieDetailScreen({navigation, route}: Props) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Overview</Text>
             <Text style={styles.overview}>{movie.overview}</Text>
+          </View>
+        )}
+
+        {movie.videos.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Videos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.galleryRow}>
+                {movie.videos.map(video => (
+                  <VideoThumbnail key={video.key} video={video} onPress={handleSelectVideo} />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
+        {movie.galleryImages.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Images</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.galleryRow}>
+                {movie.galleryImages.map(imageUrl => (
+                  <Image
+                    key={imageUrl}
+                    source={{uri: imageUrl}}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            </ScrollView>
           </View>
         )}
       </ScrollView>
@@ -266,5 +303,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
+  },
+  galleryRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  galleryImage: {
+    width: 220,
+    height: 124,
+    borderRadius: 12,
+    backgroundColor: colors.border,
   },
 });

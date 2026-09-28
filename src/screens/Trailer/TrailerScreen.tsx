@@ -14,7 +14,10 @@ import {colors, spacing} from '../../theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'Trailer'>;
 
 export function TrailerScreen({navigation, route}: Props) {
-  const {status, video, error, retry} = useTrailerVideo(route.params.movieId);
+  const {status, video, error, retry} = useTrailerVideo(
+    route.params.movieId,
+    route.params.videoKey,
+  );
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const insets = useSafeAreaInsets();

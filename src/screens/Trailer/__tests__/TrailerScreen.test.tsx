@@ -42,10 +42,10 @@ const testSafeAreaMetrics = {
   insets: {top: 47, left: 0, right: 0, bottom: 34},
 };
 
-function renderScreen(movieId = 42) {
+function renderScreen(movieId = 42, videoKey?: string) {
   const goBack = jest.fn();
   const navigation = {goBack} as unknown as Props['navigation'];
-  const route = {params: {movieId}} as unknown as Props['route'];
+  const route = {params: {movieId, videoKey}} as unknown as Props['route'];
   let renderer: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
@@ -68,6 +68,7 @@ function flushMicrotasks() {
 const sampleTrailer = {
   id: 'a',
   key: 'abc123',
+  name: 'Official Trailer',
   site: 'YouTube',
   type: 'Trailer',
   official: true,
@@ -89,6 +90,14 @@ describe('TrailerScreen', () => {
     mockFetchMovieTrailerVideo.mockReturnValue(new Promise(() => {}));
     renderScreen(99);
     expect(mockFetchMovieTrailerVideo).toHaveBeenCalledWith(99);
+  });
+
+  it('plays a specific video key without fetching when one is passed via route params', () => {
+    const {renderer} = renderScreen(42, 'specific-video-key');
+
+    expect(mockFetchMovieTrailerVideo).not.toHaveBeenCalled();
+    const player = renderer.root.findByType(YoutubeIframe);
+    expect(player.props.videoId).toBe('specific-video-key');
   });
 
   it('passes the YouTube video id to the player and enables autoplay', async () => {

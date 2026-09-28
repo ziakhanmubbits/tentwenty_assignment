@@ -118,6 +118,43 @@ describe('fetchMovieDetail', () => {
     expect(movie.logoUrl).toBe('https://image.tmdb.org/t/p/w500/logo-en.png');
   });
 
+  it('maps only YouTube videos into the videos gallery, with a thumbnail URL', async () => {
+    mockEndpoints({
+      videos: {
+        id: 1,
+        results: [
+          {id: 'a', key: 'yt-key', name: 'Official Trailer', site: 'YouTube', type: 'Trailer', official: true},
+          {id: 'b', key: 'vimeo-key', name: 'Vimeo Cut', site: 'Vimeo', type: 'Trailer', official: false},
+        ],
+      },
+    });
+    const movie = await fetchMovieDetail(1);
+
+    expect(movie.videos).toEqual([
+      {
+        key: 'yt-key',
+        name: 'Official Trailer',
+        type: 'Trailer',
+        thumbnailUrl: 'https://img.youtube.com/vi/yt-key/hqdefault.jpg',
+      },
+    ]);
+  });
+
+  it('maps up to 8 backdrop images into the gallery', async () => {
+    const backdrops = Array.from({length: 10}, (_, i) => ({
+      file_path: `/backdrop-${i}.jpg`,
+      iso_639_1: null,
+      width: 1280,
+      height: 720,
+    }));
+    mockEndpoints({images: {id: 1, backdrops, posters: [], logos: []}});
+
+    const movie = await fetchMovieDetail(1);
+
+    expect(movie.galleryImages).toHaveLength(8);
+    expect(movie.galleryImages[0]).toBe('https://image.tmdb.org/t/p/w780/backdrop-0.jpg');
+  });
+
   it('handles missing genres, overview, poster and backdrop safely', async () => {
     mockEndpoints({
       detail: {
@@ -148,6 +185,8 @@ describe('fetchMovieDetail', () => {
     expect(movie.title).toBe("The King's Man");
     expect(movie.trailerVideoKey).toBeNull();
     expect(movie.logoUrl).toBeNull();
+    expect(movie.videos).toEqual([]);
+    expect(movie.galleryImages).toEqual([]);
   });
 
   it('rejects when the required detail request fails', async () => {

@@ -33,6 +33,15 @@ const fullMovie: MovieDetail = {
   genres: ['Action', 'Thriller'],
   logoUrl: 'https://image.tmdb.org/t/p/w500/logo.png',
   trailerVideoKey: 'abc123',
+  videos: [
+    {
+      key: 'abc123',
+      name: 'Official Trailer',
+      type: 'Trailer',
+      thumbnailUrl: 'https://img.youtube.com/vi/abc123/hqdefault.jpg',
+    },
+  ],
+  galleryImages: ['https://image.tmdb.org/t/p/w780/gallery1.jpg'],
 };
 
 function renderScreen(movieId = 42) {
@@ -143,6 +152,42 @@ describe('MovieDetailScreen', () => {
     expect(navigate).toHaveBeenCalledWith('Trailer', {movieId: 42});
   });
 
+  it('renders video and image gallery sections when available', async () => {
+    mockFetchMovieDetail.mockResolvedValue(fullMovie);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Videos');
+    expect(texts).toContain('Images');
+    expect(texts).toContain('Official Trailer');
+  });
+
+  it('navigates to Trailer with the specific video key when a video thumbnail is pressed', async () => {
+    mockFetchMovieDetail.mockResolvedValue(fullMovie);
+    const {renderer, navigate} = renderScreen();
+    await flushMicrotasks();
+
+    const videoThumbnail = renderer.root.findByProps({
+      accessibilityLabel: 'Play Official Trailer',
+    });
+    act(() => {
+      videoThumbnail.props.onPress();
+    });
+
+    expect(navigate).toHaveBeenCalledWith('Trailer', {movieId: 42, videoKey: 'abc123'});
+  });
+
+  it('omits the video and image sections when none are available', async () => {
+    mockFetchMovieDetail.mockResolvedValue({...fullMovie, videos: [], galleryImages: []});
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).not.toContain('Videos');
+    expect(texts).not.toContain('Images');
+  });
+
   it('navigates to Seat Mapping with the movie id and title when Get Tickets is pressed', async () => {
     mockFetchMovieDetail.mockResolvedValue(fullMovie);
     const {renderer, navigate} = renderScreen();
@@ -182,6 +227,8 @@ describe('MovieDetailScreen', () => {
       genres: [],
       logoUrl: null,
       trailerVideoKey: null,
+      videos: [],
+      galleryImages: [],
     });
     const {renderer} = renderScreen();
     await flushMicrotasks();
