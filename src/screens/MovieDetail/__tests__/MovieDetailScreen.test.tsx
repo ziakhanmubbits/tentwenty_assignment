@@ -188,7 +188,7 @@ describe('MovieDetailScreen', () => {
     expect(texts).not.toContain('Images');
   });
 
-  it('navigates to Seat Mapping with the movie id and title when Get Tickets is pressed', async () => {
+  it('navigates to Showtime Selection with the movie id, title and release date when Get Tickets is pressed', async () => {
     mockFetchMovieDetail.mockResolvedValue(fullMovie);
     const {renderer, navigate} = renderScreen();
     await flushMicrotasks();
@@ -198,9 +198,10 @@ describe('MovieDetailScreen', () => {
       ticketsButton.props.onPress();
     });
 
-    expect(navigate).toHaveBeenCalledWith('SeatMapping', {
+    expect(navigate).toHaveBeenCalledWith('ShowtimeSelection', {
       movieId: 42,
       movieTitle: "The King's Man",
+      releaseDateLabel: 'December 22, 2021',
     });
   });
 

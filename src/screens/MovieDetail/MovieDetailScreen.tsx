@@ -130,9 +130,10 @@ export function MovieDetailScreen({navigation, route}: Props) {
 
         <Pressable
           onPress={() =>
-            navigation.navigate('SeatMapping', {
+            navigation.navigate('ShowtimeSelection', {
               movieId: movie.id,
               movieTitle: movie.title,
+              releaseDateLabel,
             })
           }
           accessibilityRole="button"
