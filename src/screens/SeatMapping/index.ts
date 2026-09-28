@@ -1,0 +1,1 @@
+export {SeatMappingScreen} from './SeatMappingScreen';

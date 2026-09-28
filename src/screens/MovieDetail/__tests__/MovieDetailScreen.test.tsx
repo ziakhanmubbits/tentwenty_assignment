@@ -143,6 +143,22 @@ describe('MovieDetailScreen', () => {
     expect(navigate).toHaveBeenCalledWith('Trailer', {movieId: 42});
   });
 
+  it('navigates to Seat Mapping with the movie id and title when Get Tickets is pressed', async () => {
+    mockFetchMovieDetail.mockResolvedValue(fullMovie);
+    const {renderer, navigate} = renderScreen();
+    await flushMicrotasks();
+
+    const ticketsButton = renderer.root.findByProps({accessibilityLabel: 'Get Tickets'});
+    act(() => {
+      ticketsButton.props.onPress();
+    });
+
+    expect(navigate).toHaveBeenCalledWith('SeatMapping', {
+      movieId: 42,
+      movieTitle: "The King's Man",
+    });
+  });
+
   it('shows the trailer as unavailable when no trailer key is present', async () => {
     mockFetchMovieDetail.mockResolvedValue({...fullMovie, trailerVideoKey: null});
     const {renderer} = renderScreen();

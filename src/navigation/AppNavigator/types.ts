@@ -3,4 +3,5 @@ export type RootStackParamList = {
   MovieDetail: {movieId: number};
   Trailer: {movieId: number};
   MovieSearch: undefined;
+  SeatMapping: {movieId: number; movieTitle: string};
 };
