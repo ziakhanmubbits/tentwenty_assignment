@@ -1,5 +1,5 @@
 import {tmdbGet} from '../../client/tmdbClient';
-import {buildYoutubeWatchUrl, fetchMovieTrailerVideo} from '../movieTrailer';
+import {fetchMovieTrailerVideo} from '../movieTrailer';
 
 jest.mock('../../client/tmdbClient');
 
@@ -29,13 +29,5 @@ describe('fetchMovieTrailerVideo', () => {
     mockTmdbGet.mockResolvedValue({id: 7, results: []});
     const video = await fetchMovieTrailerVideo(7);
     expect(video).toBeNull();
-  });
-});
-
-describe('buildYoutubeWatchUrl', () => {
-  it('builds a standard YouTube watch URL from a video key', () => {
-    expect(buildYoutubeWatchUrl('abc123')).toBe(
-      'https://www.youtube.com/watch?v=abc123',
-    );
   });
 });

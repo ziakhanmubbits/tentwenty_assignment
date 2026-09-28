@@ -1,15 +1,14 @@
 import {Ionicons} from '@react-native-vector-icons/ionicons/static';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Pressable, StatusBar, StyleSheet, View} from 'react-native';
-import Video from 'react-native-video';
+import {Pressable, StatusBar, StyleSheet, View, useWindowDimensions} from 'react-native';
+import YoutubeIframe, {PLAYER_STATES} from 'react-native-youtube-iframe';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {EmptyState} from '../../components/EmptyState';
 import {ErrorState} from '../../components/ErrorState';
 import {LoadingState} from '../../components/LoadingState';
 import {useTrailerVideo} from '../../hooks/useTrailerVideo';
 import type {RootStackParamList} from '../../navigation/AppNavigator/types';
-import {buildYoutubeWatchUrl} from '../../services/tmdb/endpoints/movieTrailer';
 import {colors, spacing} from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Trailer'>;
@@ -17,7 +16,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Trailer'>;
 export function TrailerScreen({navigation, route}: Props) {
   const {status, video, error, retry} = useTrailerVideo(route.params.movieId);
   const [playbackFailed, setPlaybackFailed] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const insets = useSafeAreaInsets();
+  const {width, height} = useWindowDimensions();
   const hasNavigatedBackRef = useRef(false);
 
   const goToDetail = useCallback(() => {
@@ -33,6 +34,15 @@ export function TrailerScreen({navigation, route}: Props) {
       hasNavigatedBackRef.current = true;
     };
   }, []);
+
+  const handleChangeState = useCallback(
+    (state: PLAYER_STATES) => {
+      if (state === PLAYER_STATES.ENDED) {
+        goToDetail();
+      }
+    },
+    [goToDetail],
+  );
 
   const closeButton = (
     <Pressable
@@ -56,15 +66,22 @@ export function TrailerScreen({navigation, route}: Props) {
         <EmptyState message="Trailer not available for this movie." />
       )}
       {status === 'success' && video && !playbackFailed && (
-        <Video
-          source={{uri: buildYoutubeWatchUrl(video.key)}}
-          style={styles.video}
-          resizeMode="contain"
-          controls
-          paused={false}
-          onEnd={goToDetail}
-          onError={() => setPlaybackFailed(true)}
-        />
+        <>
+          <YoutubeIframe
+            videoId={video.key}
+            play
+            height={height}
+            width={width}
+            onReady={() => setIsPlayerReady(true)}
+            onChangeState={handleChangeState}
+            onError={() => setPlaybackFailed(true)}
+          />
+          {!isPlayerReady && (
+            <View style={styles.loadingOverlay}>
+              <LoadingState />
+            </View>
+          )}
+        </>
       )}
       {status === 'success' && playbackFailed && (
         <ErrorState
@@ -83,7 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.textPrimary,
   },
-  video: {
+  loadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,

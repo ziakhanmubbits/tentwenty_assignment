@@ -2,7 +2,7 @@ import React from 'react';
 import ReactTestRenderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import Video from 'react-native-video';
+import YoutubeIframe from 'react-native-youtube-iframe';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {TrailerScreen} from '../TrailerScreen';
 import {fetchMovieTrailerVideo} from '../../../services/tmdb/endpoints/movieTrailer';
@@ -13,11 +13,22 @@ jest.mock('../../../services/tmdb/endpoints/movieTrailer', () => ({
   fetchMovieTrailerVideo: jest.fn(),
 }));
 
-jest.mock('react-native-video', () => {
+jest.mock('react-native-youtube-iframe', () => {
   const ReactModule = require('react');
-  const MockVideo = (props: Record<string, unknown>) =>
-    ReactModule.createElement('MockVideo', props);
-  return {__esModule: true, default: MockVideo};
+  const MockYoutubeIframe = (props: Record<string, unknown>) =>
+    ReactModule.createElement('MockYoutubeIframe', props);
+  return {
+    __esModule: true,
+    default: MockYoutubeIframe,
+    PLAYER_STATES: {
+      ENDED: 'ended',
+      PAUSED: 'paused',
+      PLAYING: 'playing',
+      UNSTARTED: 'unstarted',
+      BUFFERING: 'buffering',
+      VIDEO_CUED: 'video cued',
+    },
+  };
 });
 
 const mockFetchMovieTrailerVideo = fetchMovieTrailerVideo as jest.MockedFunction<
@@ -54,6 +65,14 @@ function flushMicrotasks() {
   });
 }
 
+const sampleTrailer = {
+  id: 'a',
+  key: 'abc123',
+  site: 'YouTube',
+  type: 'Trailer',
+  official: true,
+};
+
 describe('TrailerScreen', () => {
   afterEach(() => {
     mockFetchMovieTrailerVideo.mockReset();
@@ -72,22 +91,33 @@ describe('TrailerScreen', () => {
     expect(mockFetchMovieTrailerVideo).toHaveBeenCalledWith(99);
   });
 
-  it('renders the video player and autoplays when a trailer is found', async () => {
-    mockFetchMovieTrailerVideo.mockResolvedValue({
-      id: 'a',
-      key: 'abc123',
-      site: 'YouTube',
-      type: 'Trailer',
-      official: true,
-    });
+  it('passes the YouTube video id to the player and enables autoplay', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
     const {renderer} = renderScreen();
     await flushMicrotasks();
 
-    const video = renderer.root.findByType(Video);
-    expect(video.props.paused).toBe(false);
-    expect(video.props.source).toEqual({
-      uri: 'https://www.youtube.com/watch?v=abc123',
+    const player = renderer.root.findByType(YoutubeIframe);
+    expect(player.props.videoId).toBe('abc123');
+    expect(player.props.play).toBe(true);
+  });
+
+  it('shows a loading overlay until the player reports ready, then hides it', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    expect(
+      renderer.root.findAllByProps({accessibilityRole: 'progressbar'}).length,
+    ).toBeGreaterThan(0);
+
+    const player = renderer.root.findByType(YoutubeIframe);
+    act(() => {
+      player.props.onReady();
     });
+
+    expect(
+      renderer.root.findAllByProps({accessibilityRole: 'progressbar'}).length,
+    ).toBe(0);
   });
 
   it('shows an unavailable state when there is no suitable trailer', async () => {
@@ -109,20 +139,14 @@ describe('TrailerScreen', () => {
     expect(renderer.root.findByProps({accessibilityLabel: 'Try again'})).toBeTruthy();
   });
 
-  it('shows a playback error and a way back when the video fails to play', async () => {
-    mockFetchMovieTrailerVideo.mockResolvedValue({
-      id: 'a',
-      key: 'abc123',
-      site: 'YouTube',
-      type: 'Trailer',
-      official: true,
-    });
+  it('shows a playback error and a way back when the player reports an error', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
     const {renderer} = renderScreen();
     await flushMicrotasks();
 
-    const video = renderer.root.findByType(Video);
+    const player = renderer.root.findByType(YoutubeIframe);
     act(() => {
-      video.props.onError();
+      player.props.onError('embed_not_allowed');
     });
 
     const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
@@ -132,34 +156,36 @@ describe('TrailerScreen', () => {
     ).toBeTruthy();
   });
 
-  it('navigates back to Movie Detail exactly once when playback completes', async () => {
-    mockFetchMovieTrailerVideo.mockResolvedValue({
-      id: 'a',
-      key: 'abc123',
-      site: 'YouTube',
-      type: 'Trailer',
-      official: true,
-    });
+  it('navigates back to Movie Detail exactly once when playback ends', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
     const {renderer, goBack} = renderScreen();
     await flushMicrotasks();
 
-    const video = renderer.root.findByType(Video);
+    const player = renderer.root.findByType(YoutubeIframe);
     act(() => {
-      video.props.onEnd();
-      video.props.onEnd();
+      player.props.onChangeState('ended');
+      player.props.onChangeState('ended');
     });
 
     expect(goBack).toHaveBeenCalledTimes(1);
   });
 
-  it('navigates back when the close button is pressed', async () => {
-    mockFetchMovieTrailerVideo.mockResolvedValue({
-      id: 'a',
-      key: 'abc123',
-      site: 'YouTube',
-      type: 'Trailer',
-      official: true,
+  it('does not navigate back for non-ended player state changes', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
+    const {renderer, goBack} = renderScreen();
+    await flushMicrotasks();
+
+    const player = renderer.root.findByType(YoutubeIframe);
+    act(() => {
+      player.props.onChangeState('playing');
+      player.props.onChangeState('paused');
     });
+
+    expect(goBack).not.toHaveBeenCalled();
+  });
+
+  it('navigates back when the close button is pressed', async () => {
+    mockFetchMovieTrailerVideo.mockResolvedValue(sampleTrailer);
     const {renderer, goBack} = renderScreen();
     await flushMicrotasks();
 
@@ -172,16 +198,10 @@ describe('TrailerScreen', () => {
   });
 
   it('does not crash when the resolved video has an empty key', async () => {
-    mockFetchMovieTrailerVideo.mockResolvedValue({
-      id: 'a',
-      key: '',
-      site: 'YouTube',
-      type: 'Trailer',
-      official: true,
-    });
+    mockFetchMovieTrailerVideo.mockResolvedValue({...sampleTrailer, key: ''});
     const {renderer} = renderScreen();
     await flushMicrotasks();
 
-    expect(renderer.root.findByType(Video)).toBeTruthy();
+    expect(renderer.root.findByType(YoutubeIframe)).toBeTruthy();
   });
 });

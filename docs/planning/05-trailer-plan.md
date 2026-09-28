@@ -1,16 +1,20 @@
 # Feature 4: Trailer Experience
 
-## Player/dependency decision (read this first)
+## Player/dependency decision — history and final answer
 
-This revisits a decision made back in Phase 0. TMDb trailers are hosted on YouTube (`site: "YouTube"`, a `key`, not a direct media URL). `react-native-video` plays direct media sources (mp4/HLS/DASH); it cannot play a YouTube watch-page URL, and scraping YouTube's real stream URL client-side would violate YouTube's Terms of Service, so that was never on the table.
+This went through three stages, worth recording because each one changed real code.
 
-When this feature's instructions reopened the question ("if a genuinely necessary dependency is required, explain why before adding it"), I re-asked explicitly: add `react-native-youtube-iframe` now (the only way trailers actually play for real movies), or keep `react-native-video` only, as originally decided. The answer was to **keep `react-native-video` only**.
+**Phase 0**: TMDb trailers are hosted on YouTube (`site: "YouTube"`, a `key`, not a direct media URL). `react-native-video` plays direct media sources (mp4/HLS/DASH) and cannot play a YouTube watch-page URL; scraping YouTube's real stream URL client-side would violate its Terms of Service, so that was never on the table. Asked to choose between `react-native-video` (accepting no real playback) and `react-native-youtube-iframe` (real playback, WebView-based), the decision was `react-native-video`.
 
-**Consequence, stated plainly**: the Trailer screen is fully built — loading, error, unavailable, autoplay wiring, completion-navigation, playback-error handling — but because `trailerVideoKey` is a YouTube key and `react-native-video` cannot play it, attempting real playback will reliably fail via the player's own `onError` callback for virtually every real movie. This is handled honestly (a "Couldn't play this trailer" state with a way back), not faked. The architecture, autoplay logic, and completion-navigation are all real and covered by tests with a mocked player; end-to-end playback of an actual trailer is not achievable with the current dependency choice.
+**Feature 4 (first pass)**: built the full Trailer screen — loading, error, unavailable, autoplay, completion-navigation — on top of `react-native-video`, with the source URL set to the standard YouTube watch URL. As expected, this reliably fails via the player's own `onError` for real movies, since the native player still can't decode a YouTube page as media. This was implemented honestly (a "Couldn't play this trailer" state, not a fake success), and the trade-off was re-confirmed explicitly when raised a second time.
 
-## Trailer selection strategy
+**Feature 4 fix (this change)**: the requirement for *actual* autoplay-with-completion-navigation meant the trade-off was no longer acceptable. Switched to `react-native-youtube-iframe` (a WebView-based wrapper around YouTube's official IFrame Player API) plus its peer dependency `react-native-webview`. `react-native-video` was removed — nothing else in the app used it.
 
-`selectTrailerVideo(videos)` (`src/services/tmdb/utils/selectTrailerVideo.ts`) — a pure, five-tier, fully testable function:
+**Why this dependency and not another**: `react-native-youtube-iframe` takes a YouTube video ID directly (`videoId` prop — exactly what `selectTrailerVideo` already produces, no URL-building needed), exposes a real `onChangeState` callback with an `'ended'` state for reliable completion detection, and is built on `react-native-webview`, which is the standard, actively-maintained (v14.x) WebView implementation for RN and supports the New Architecture. It ships its own TypeScript types. No native code of its own (verified: no `ios`/`android` folders, no podspec) — only its `react-native-webview` peer needs native linking. This is the smallest dependency that makes real playback possible without touching YouTube's terms of service.
+
+## Trailer selection strategy (unchanged)
+
+`selectTrailerVideo(videos)` (`src/services/tmdb/utils/selectTrailerVideo.ts`) — a pure, five-tier, fully testable function, untouched by this fix:
 
 1. Official YouTube trailer
 2. Any YouTube trailer
@@ -19,36 +23,36 @@ When this feature's instructions reopened the question ("if a genuinely necessar
 5. Any other YouTube video (last resort)
 6. `null` if nothing on YouTube exists
 
-This replaces Feature 3's narrower two-tier logic (official trailer → first trailer) and is now shared: `movieDetail.ts`'s trailer-availability check (for `TrailerButton`'s enabled/disabled state) and the new `movieTrailer.ts` endpoint (for actual playback selection) both call the same function, so Movie Detail and the Trailer screen can never disagree about whether a trailer exists.
+Still shared between `movieDetail.ts`'s trailer-availability check and `movieTrailer.ts`'s playback selection, so Movie Detail and the Trailer screen can never disagree about whether a trailer exists.
 
-## Data flow
+## Data flow (unchanged)
 
-`MovieDetailScreen` → `TrailerButton.onPress` → `navigation.navigate('Trailer', {movieId})` (only the id crosses the navigation boundary, per instruction) → `TrailerScreen` → `useTrailerVideo(movieId)` → `fetchMovieTrailerVideo(movieId)` (`src/services/tmdb/endpoints/movieTrailer.ts`, a focused single-endpoint call to `/movie/{id}/videos` — it does not re-fetch the full detail/images payload the Detail screen already has, since Trailer only needs the video list).
+`MovieDetailScreen` → `TrailerButton.onPress` → `navigation.navigate('Trailer', {movieId})` → `TrailerScreen` → `useTrailerVideo(movieId)` → `fetchMovieTrailerVideo(movieId)`. The now-unused `buildYoutubeWatchUrl` helper (built for the `react-native-video` source URL) was deleted along with its test, since `YoutubeIframe` takes the raw video key.
 
-## Video playback approach
+## Video playback approach (updated)
 
-`react-native-video`'s `<Video source={{uri}} controls paused={false} onEnd={...} onError={...} />`, full-bleed on a dark background. The source URI is the standard YouTube watch URL (`https://www.youtube.com/watch?v={key}`, via `buildYoutubeWatchUrl`) — the most honest representation of "the video TMDb pointed us to," not a pretense that it's a playable direct URL. When the native player can't decode it, `onError` fires and the screen shows a friendly "Couldn't play this trailer." message with a "Back to Movie Details" action, instead of crashing or showing a raw error.
+`<YoutubeIframe videoId={video.key} play height={height} width={width} onReady={...} onChangeState={...} onError={...} />`, sized to the full window via `useWindowDimensions()` (which also means it re-sizes correctly on rotation, for free). YouTube's own player controls render inside the iframe — no custom playback controls were built. A `LoadingState` overlay is shown on top of the (already-mounting) player until `onReady` fires, so the WebView's own load flash isn't visible to the user — this is "the video is preparing," distinct from "we're still fetching which video to play" (the earlier `status === 'loading'`).
 
-## Autoplay & completion navigation
+## Autoplay & completion navigation (unchanged behavior, new trigger)
 
-`paused={false}` starts playback immediately on mount (autoplay). `onEnd` calls a `goToDetail` callback that navigates back via `navigation.goBack()`. A `hasNavigatedBackRef` guard ensures this fires at most once even if `onEnd` (or a user tap on the close button) fires more than once, and an unmount effect also sets that ref so no late-arriving callback can navigate after the screen is gone.
+`play` prop set to `true` autoplays on mount. Completion is now detected via `onChangeState(state)` checking `state === PLAYER_STATES.ENDED` (a real signal from YouTube's player, not a guess). The same `hasNavigatedBackRef`-guarded `goToDetail` callback from the first pass is reused unchanged — fires at most once, and an unmount effect blocks any late callback from navigating after the screen is gone.
 
-## Error handling
+## Error handling (unchanged shape, real trigger now)
 
-- API failure (videos request rejects): reuses `ErrorState` with retry.
-- No suitable trailer (`selectTrailerVideo` returns `null`): reuses `EmptyState` ("Trailer not available for this movie."), with the same persistent close button as every other state.
-- Playback failure (`onError`): `ErrorState` reused with a new optional `actionLabel` prop (default unchanged: `"Try again"`) set to `"Back to Movie Details"` here — labeling it "Try again" would have been misleading since retrying doesn't change anything about an inherently-unplayable YouTube source.
+- API failure (videos request rejects): `ErrorState` with retry.
+- No suitable trailer: `EmptyState` ("Trailer not available for this movie.").
+- Playback failure (`onError`, now a real YouTube player error — e.g. embed disabled, video removed — rather than an inevitable "can't decode this URL" failure): `ErrorState` with `actionLabel="Back to Movie Details"`.
 
-## Orientation
+## Orientation (unchanged)
 
-No orientation lock, and no new dependency for it. The screen's layout (full-bleed video/state content + an absolutely-positioned close button anchored to the safe-area inset) already adapts naturally to either orientation; forcing landscape would need a native orientation-lock library the project doesn't have, and given the player will rarely actually show a played video anyway (see above), that complexity wasn't justified for this slice.
+No orientation lock, no new dependency for it — `useWindowDimensions()` already makes the player and layout adapt to whichever orientation the device is in.
 
-## Other decisions
+## Setup
 
-- `StatusBar hidden` while this screen is mounted, for a genuinely full-screen feel (native RN component, no dependency).
-- Loading/error/unavailable states reuse `LoadingState`/`ErrorState`/`EmptyState` as-is on the screen's dark background, per "reuse existing architecture" — their text colors weren't tuned for a dark backdrop, which is a minor, accepted visual trade-off rather than a reason to fork new components.
+No README changes: the project's existing generic "run `bundle exec pod install` after updating native dependencies" instructions already cover linking the new `react-native-webview` native module; nothing TMDb/trailer-specific needed adding. Verified locally that `tsc`/`eslint`/`jest` all pass; `pod install` itself couldn't be exercised in this environment (pre-existing local Ruby/bundler gem mismatch unrelated to this change — see Feature 3's planning note), so iOS native linking should be verified after a `bundle install` on a machine with the right gems.
 
 ## Trade-offs / known limitations
 
-- Real trailer playback does not work end-to-end (see the dependency decision above) — this is a deliberate, explicitly-confirmed limitation, not a bug.
-- No orientation lock/rotation on entering the Trailer screen.
+- `react-native-webview`'s native module isn't mockable via NetInfo/AsyncStorage-style official jest mocks (it ships none), so a manual mock was added at `__mocks__/react-native-webview.js` (Jest auto-applies this to any node_modules import of that package). `TrailerScreen`'s own test mocks `react-native-youtube-iframe` directly instead, for full control over triggering `onReady`/`onChangeState`/`onError`.
+- Playback correctness (does it actually look/feel right on a real device, does autoplay reliably start without a tap on iOS) could not be verified in this environment — no simulator/device access here. Worth a manual check.
+- No orientation lock/rotation on entering the Trailer screen (unchanged from the first pass).
