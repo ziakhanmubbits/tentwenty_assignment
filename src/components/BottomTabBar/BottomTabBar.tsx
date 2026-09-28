@@ -1,6 +1,6 @@
 import {Ionicons} from '@react-native-vector-icons/ionicons/static';
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {colors, spacing} from '../../theme';
 
@@ -11,11 +11,14 @@ const TABS = [
   {key: 'more', label: 'More', icon: 'menu-outline'},
 ] as const;
 
+export type BottomTabKey = (typeof TABS)[number]['key'];
+
 interface BottomTabBarProps {
-  activeTab: (typeof TABS)[number]['key'];
+  activeTab: BottomTabKey;
+  onTabPress: (tab: BottomTabKey) => void;
 }
 
-export function BottomTabBar({activeTab}: BottomTabBarProps) {
+export function BottomTabBar({activeTab, onTabPress}: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -23,7 +26,13 @@ export function BottomTabBar({activeTab}: BottomTabBarProps) {
       {TABS.map(tab => {
         const isActive = tab.key === activeTab;
         return (
-          <View key={tab.key} style={styles.tab}>
+          <Pressable
+            key={tab.key}
+            onPress={() => onTabPress(tab.key)}
+            accessibilityRole="button"
+            accessibilityLabel={tab.label}
+            accessibilityState={{selected: isActive}}
+            style={styles.tab}>
             <Ionicons
               name={tab.icon}
               size={24}
@@ -32,7 +41,7 @@ export function BottomTabBar({activeTab}: BottomTabBarProps) {
             <Text style={[styles.label, isActive && styles.labelActive]}>
               {tab.label}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>
@@ -51,6 +60,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     gap: spacing.xs,
+    minHeight: 44,
   },
   label: {
     fontSize: 11,

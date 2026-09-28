@@ -5,3 +5,10 @@ export type RootStackParamList = {
   MovieSearch: undefined;
   SeatMapping: {movieId: number; movieTitle: string};
 };
+
+export type RootTabParamList = {
+  Watch: undefined;
+  Dashboard: undefined;
+  MediaLibrary: undefined;
+  More: undefined;
+};

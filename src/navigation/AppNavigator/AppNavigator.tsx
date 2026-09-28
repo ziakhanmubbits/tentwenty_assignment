@@ -1,22 +1,26 @@
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import React from 'react';
-import {MovieDetailScreen} from '../../screens/MovieDetail';
-import {MovieListScreen} from '../../screens/MovieList';
-import {MovieSearchScreen} from '../../screens/MovieSearch';
-import {SeatMappingScreen} from '../../screens/SeatMapping';
-import {TrailerScreen} from '../../screens/Trailer';
-import type {RootStackParamList} from './types';
+import {DashboardScreen} from '../../screens/Dashboard';
+import {MediaLibraryScreen} from '../../screens/MediaLibrary';
+import {MoreScreen} from '../../screens/More';
+import {CustomTabBar} from './CustomTabBar';
+import type {RootTabParamList} from './types';
+import {WatchStackNavigator} from './WatchStackNavigator';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<RootTabParamList>();
+
+function renderTabBar(props: BottomTabBarProps) {
+  return <CustomTabBar {...props} />;
+}
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
-      <Stack.Screen name="MovieList" component={MovieListScreen} />
-      <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
-      <Stack.Screen name="Trailer" component={TrailerScreen} />
-      <Stack.Screen name="MovieSearch" component={MovieSearchScreen} />
-      <Stack.Screen name="SeatMapping" component={SeatMappingScreen} />
-    </Stack.Navigator>
+    <Tab.Navigator screenOptions={{headerShown: false}} tabBar={renderTabBar}>
+      <Tab.Screen name="Watch" component={WatchStackNavigator} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="MediaLibrary" component={MediaLibraryScreen} />
+      <Tab.Screen name="More" component={MoreScreen} />
+    </Tab.Navigator>
   );
 }

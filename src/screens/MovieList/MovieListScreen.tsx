@@ -2,7 +2,6 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import React, {useCallback} from 'react';
 import {FlatList, StyleSheet, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {BottomTabBar} from '../../components/BottomTabBar';
 import {EmptyState} from '../../components/EmptyState';
 import {ErrorState} from '../../components/ErrorState';
 import {Header} from '../../components/Header';
@@ -56,7 +55,6 @@ export function MovieListScreen({navigation}: Props) {
           />
         )}
       </View>
-      <BottomTabBar activeTab="watch" />
     </SafeAreaView>
   );
 }
