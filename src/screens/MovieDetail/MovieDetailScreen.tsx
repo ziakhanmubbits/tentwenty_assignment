@@ -96,26 +96,51 @@ export function MovieDetailScreen({navigation, route}: Props) {
         ) : (
           <View style={[styles.heroImage, styles.heroImageFallback]} />
         )}
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={8}
-          style={[styles.backButton, {top: insets.top + spacing.sm}]}>
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-          <Text style={styles.backButtonText}>Watch</Text>
-        </Pressable>
-        {movie.logoUrl ? (
-          <Image
-            source={{uri: movie.logoUrl}}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        ) : (
-          <Text style={styles.titleFallback} numberOfLines={2}>
-            {movie.title}
-          </Text>
-        )}
+
+        <View style={[styles.heroOverlay, {paddingTop: insets.top + spacing.sm}]}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
+            <Text style={styles.backButtonText}>Watch</Text>
+          </Pressable>
+
+          <View style={styles.heroBottomContent}>
+            {movie.logoUrl ? (
+              <Image source={{uri: movie.logoUrl}} style={styles.logo} resizeMode="contain" />
+            ) : (
+              <Text style={styles.titleFallback} numberOfLines={2}>
+                {movie.title}
+              </Text>
+            )}
+
+            {releaseDateLabel && (
+              <Text style={styles.releaseDate}>In Theaters {releaseDateLabel}</Text>
+            )}
+
+            <Pressable
+              onPress={() =>
+                navigation.navigate('ShowtimeSelection', {
+                  movieId: movie.id,
+                  movieTitle: movie.title,
+                  releaseDateLabel,
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Get Tickets"
+              style={styles.ticketsButton}>
+              <Text style={styles.ticketsButtonText}>Get Tickets</Text>
+            </Pressable>
+
+            <TrailerButton
+              available={Boolean(movie.trailerVideoKey)}
+              onPress={() => navigation.navigate('Trailer', {movieId: movie.id})}
+            />
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -124,29 +149,6 @@ export function MovieDetailScreen({navigation, route}: Props) {
           styles.contentContainer,
           {paddingBottom: insets.bottom + spacing.lg},
         ]}>
-        {releaseDateLabel && (
-          <Text style={styles.releaseDate}>In Theaters {releaseDateLabel}</Text>
-        )}
-
-        <Pressable
-          onPress={() =>
-            navigation.navigate('ShowtimeSelection', {
-              movieId: movie.id,
-              movieTitle: movie.title,
-              releaseDateLabel,
-            })
-          }
-          accessibilityRole="button"
-          accessibilityLabel="Get Tickets"
-          style={styles.ticketsButton}>
-          <Text style={styles.ticketsButtonText}>Get Tickets</Text>
-        </Pressable>
-
-        <TrailerButton
-          available={Boolean(movie.trailerVideoKey)}
-          onPress={() => navigation.navigate('Trailer', {movieId: movie.id})}
-        />
-
         {movie.genres.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Genres</Text>
@@ -211,7 +213,6 @@ const styles = StyleSheet.create({
   },
   heroPortrait: {
     width: '100%',
-    height: 340,
   },
   heroLandscape: {
     width: '42%',
@@ -227,11 +228,14 @@ const styles = StyleSheet.create({
   heroImageFallback: {
     backgroundColor: colors.border,
   },
+  heroOverlay: {
+    justifyContent: 'space-between',
+    paddingBottom: spacing.lg,
+  },
   backButton: {
-    position: 'absolute',
-    left: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     minHeight: 44,
     paddingHorizontal: spacing.sm,
   },
@@ -245,18 +249,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500',
   },
+  heroBottomContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
   logo: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    left: spacing.lg,
-    right: spacing.lg,
+    width: '100%',
     height: 64,
   },
   titleFallback: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    left: spacing.lg,
-    right: spacing.lg,
     color: colors.white,
     fontSize: 26,
     fontWeight: '700',
@@ -270,16 +271,16 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   releaseDate: {
-    color: colors.textSecondary,
+    color: colors.white,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
   ticketsButton: {
     backgroundColor: colors.primary,
-    borderRadius: 24,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    borderRadius: 26,
+    paddingVertical: spacing.md,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },

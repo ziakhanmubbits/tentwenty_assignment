@@ -37,9 +37,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     borderWidth: 1,
     borderColor: colors.primary,
-    borderRadius: 24,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    borderRadius: 26,
+    paddingVertical: spacing.md,
+    minHeight: 52,
   },
   buttonDisabled: {
     borderColor: colors.border,
