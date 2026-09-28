@@ -108,7 +108,7 @@ describe('ShowtimeSelectionScreen', () => {
     expect(updatedDatePills[1].props.accessibilityState.selected).toBe(true);
   });
 
-  it('navigates to Seat Mapping with the movie id and title when Select Seats is pressed', () => {
+  it('navigates to Seat Mapping with the movie id, title and a schedule label when Select Seats is pressed', () => {
     const {renderer, navigate} = renderScreen();
 
     const selectSeatsButton = renderer.root.findByProps({accessibilityLabel: 'Select Seats'});
@@ -116,10 +116,14 @@ describe('ShowtimeSelectionScreen', () => {
       selectSeatsButton.props.onPress();
     });
 
-    expect(navigate).toHaveBeenCalledWith('SeatMapping', {
-      movieId: 42,
-      movieTitle: "The King's Man",
-    });
+    expect(navigate).toHaveBeenCalledWith(
+      'SeatMapping',
+      expect.objectContaining({
+        movieId: 42,
+        movieTitle: "The King's Man",
+        scheduleLabel: expect.stringContaining('12:30 Hall 1'),
+      }),
+    );
   });
 
   it('navigates back when the back button is pressed', () => {

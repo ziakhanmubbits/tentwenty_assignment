@@ -1,13 +1,19 @@
-import {createInitialSeatLayout, OCCUPIED_SEAT_IDS, ROWS, SEATS_PER_ROW} from '../seatLayout';
+import {
+  OCCUPIED_SEAT_IDS,
+  ROW_COUNT,
+  SEATS_PER_ROW,
+  VIP_ROW,
+  createInitialSeatLayout,
+} from '../seatLayout';
 
 describe('createInitialSeatLayout', () => {
-  it('creates one row per configured row label, each with the configured seat count', () => {
+  it('creates the configured number of rows, each with the configured seat count', () => {
     const layout = createInitialSeatLayout();
 
-    expect(layout).toHaveLength(ROWS.length);
+    expect(layout).toHaveLength(ROW_COUNT);
     layout.forEach((row, index) => {
       expect(row).toHaveLength(SEATS_PER_ROW);
-      row.forEach(seat => expect(seat.row).toBe(ROWS[index]));
+      row.forEach(seat => expect(seat.row).toBe(String(index + 1)));
     });
   });
 
@@ -16,7 +22,16 @@ describe('createInitialSeatLayout', () => {
     const ids = layout.flat().map(seat => seat.id);
 
     expect(new Set(ids).size).toBe(ids.length);
-    ids.forEach(id => expect(id).toMatch(/^[A-Z]\d+$/));
+    ids.forEach(id => expect(id).toMatch(/^\d+-\d+$/));
+  });
+
+  it('marks the last row as VIP and every other row as regular', () => {
+    const layout = createInitialSeatLayout();
+
+    layout.forEach(row => {
+      const expectedTier = row[0].row === VIP_ROW ? 'vip' : 'regular';
+      row.forEach(seat => expect(seat.tier).toBe(expectedTier));
+    });
   });
 
   it('marks exactly the configured seats as occupied and everything else available', () => {
@@ -29,6 +44,12 @@ describe('createInitialSeatLayout', () => {
         expect(seat.status).toBe('available');
       }
     });
+  });
+
+  it('never marks the VIP row as occupied', () => {
+    const layout = createInitialSeatLayout();
+    const vipRow = layout.find(row => row[0].row === VIP_ROW)!;
+    expect(vipRow.every(seat => seat.status === 'available')).toBe(true);
   });
 
   it('never marks a seat as selected initially', () => {

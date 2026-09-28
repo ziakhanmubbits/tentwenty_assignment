@@ -6,7 +6,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {ShowtimeCard} from '../../components/ShowtimeCard';
 import type {RootStackParamList} from '../../navigation/AppNavigator/types';
 import {colors, spacing} from '../../theme';
-import {MOCK_SHOWTIMES, generateDateOptions} from './showtimeData';
+import {MOCK_SHOWTIMES, formatFullDate, generateDateOptions, shortenVenue} from './showtimeData';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ShowtimeSelection'>;
 
@@ -19,6 +19,15 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
   const handleSelectShowtime = useCallback((showtimeId: string) => {
     setSelectedShowtimeId(showtimeId);
   }, []);
+
+  const handleSelectSeats = useCallback(() => {
+    const showtime =
+      MOCK_SHOWTIMES.find(item => item.id === selectedShowtimeId) ?? MOCK_SHOWTIMES[0];
+    const scheduleLabel = `${formatFullDate(selectedDateId)} | ${showtime.time} ${shortenVenue(
+      showtime.venue,
+    )}`;
+    navigation.navigate('SeatMapping', {movieId, movieTitle, scheduleLabel});
+  }, [movieId, movieTitle, navigation, selectedDateId, selectedShowtimeId]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -81,7 +90,7 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
       </ScrollView>
 
       <Pressable
-        onPress={() => navigation.navigate('SeatMapping', {movieId, movieTitle})}
+        onPress={handleSelectSeats}
         accessibilityRole="button"
         accessibilityLabel="Select Seats"
         style={styles.selectSeatsButton}>

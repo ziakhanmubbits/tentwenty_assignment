@@ -4,7 +4,7 @@ export type RootStackParamList = {
   Trailer: {movieId: number; videoKey?: string};
   MovieSearch: undefined;
   ShowtimeSelection: {movieId: number; movieTitle: string; releaseDateLabel: string | null};
-  SeatMapping: {movieId: number; movieTitle: string};
+  SeatMapping: {movieId: number; movieTitle: string; scheduleLabel: string};
 };
 
 export type RootTabParamList = {

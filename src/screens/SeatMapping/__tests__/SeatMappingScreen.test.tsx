@@ -16,7 +16,11 @@ function renderScreen() {
   const goBack = jest.fn();
   const navigation = {goBack} as unknown as Props['navigation'];
   const route = {
-    params: {movieId: 42, movieTitle: "The King's Man"},
+    params: {
+      movieId: 42,
+      movieTitle: "The King's Man",
+      scheduleLabel: 'March 5, 2026 | 12:30 Hall 1',
+    },
   } as unknown as Props['route'];
   let renderer: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
@@ -30,124 +34,192 @@ function renderScreen() {
 }
 
 describe('SeatMappingScreen', () => {
-  it('renders the movie title and an initial "no seats selected" summary', () => {
+  it('renders the movie title, schedule label and an initial "no seats selected" summary', () => {
     const {renderer} = renderScreen();
     expect(
       renderer.root.findAllByProps({children: "The King's Man"}).length,
     ).toBeGreaterThan(0);
     expect(
-      renderer.root.findAllByProps({children: 'No seats selected'}).length,
+      renderer.root.findAllByProps({children: 'March 5, 2026 | 12:30 Hall 1'}).length,
     ).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({children: '$ 0'}).length).toBeGreaterThan(0);
   });
 
-  it('renders an available seat with the correct accessibility label', () => {
+  it('renders a regular available seat with the correct accessibility label', () => {
     const {renderer} = renderScreen();
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
-    expect(seatA1).toBeTruthy();
+    expect(
+      renderer.root.findByProps({accessibilityLabel: 'Seat 1-1, Regular, available'}),
+    ).toBeTruthy();
   });
 
-  it('renders an occupied seat as disabled with the correct accessibility label', () => {
+  it('renders an occupied seat as disabled', () => {
     const {renderer} = renderScreen();
-    const seatA3 = renderer.root.findByProps({accessibilityLabel: 'Seat A3, occupied'});
-    expect(seatA3.props.accessibilityState.disabled).toBe(true);
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-3, Regular, occupied',
+    });
+    expect(seat.props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('renders the last row as VIP seats', () => {
+    const {renderer} = renderScreen();
+    expect(
+      renderer.root.findByProps({accessibilityLabel: 'Seat 10-1, VIP, available'}),
+    ).toBeTruthy();
   });
 
   it('selects an available seat when pressed', () => {
     const {renderer} = renderScreen();
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
 
     act(() => {
-      seatA1.props.onPress();
+      seat.props.onPress();
     });
 
     expect(
-      renderer.root.findByProps({accessibilityLabel: 'Seat A1, selected'}),
+      renderer.root.findByProps({accessibilityLabel: 'Seat 1-1, Regular, selected'}),
     ).toBeTruthy();
   });
 
   it('deselects a selected seat when pressed again', () => {
     const {renderer} = renderScreen();
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
 
     act(() => {
-      seatA1.props.onPress();
+      seat.props.onPress();
     });
-    const selectedA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, selected'});
+    const selected = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, selected',
+    });
     act(() => {
-      selectedA1.props.onPress();
+      selected.props.onPress();
     });
 
     expect(
-      renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'}),
+      renderer.root.findByProps({accessibilityLabel: 'Seat 1-1, Regular, available'}),
     ).toBeTruthy();
   });
 
   it('does not select an occupied seat when pressed', () => {
     const {renderer} = renderScreen();
-    const seatA3 = renderer.root.findByProps({accessibilityLabel: 'Seat A3, occupied'});
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-3, Regular, occupied',
+    });
 
     act(() => {
-      seatA3.props.onPress();
+      seat.props.onPress();
     });
 
     expect(
-      renderer.root.findAllByProps({accessibilityLabel: 'Seat A3, selected'}).length,
+      renderer.root.findAllByProps({accessibilityLabel: 'Seat 1-3, Regular, selected'}).length,
     ).toBe(0);
+    expect(renderer.root.findAllByProps({children: '$ 0'}).length).toBeGreaterThan(0);
+  });
+
+  it('sums the total price across regular and VIP seats', () => {
+    const {renderer} = renderScreen();
+    const regularSeat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
+    const vipSeat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 10-1, VIP, available',
+    });
+
+    act(() => {
+      regularSeat.props.onPress();
+      vipSeat.props.onPress();
+    });
+
+    expect(renderer.root.findAllByProps({children: '$ 200'}).length).toBeGreaterThan(0);
     expect(
-      renderer.root.findAllByProps({children: 'No seats selected'}).length,
+      renderer.root.findAllByProps({children: '1 / 1 row'}).length,
+    ).toBeGreaterThan(0);
+    expect(
+      renderer.root.findAllByProps({children: '1 / 10 row'}).length,
     ).toBeGreaterThan(0);
   });
 
-  it('updates the summary when multiple seats are selected', () => {
+  it('deselects a seat when its chip is removed', () => {
     const {renderer} = renderScreen();
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
-    const seatB2 = renderer.root.findByProps({accessibilityLabel: 'Seat B2, available'});
-
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
     act(() => {
-      seatA1.props.onPress();
-      seatB2.props.onPress();
+      seat.props.onPress();
+    });
+
+    const removeChip = renderer.root.findByProps({
+      accessibilityLabel: 'Remove seat 1-1',
+    });
+    act(() => {
+      removeChip.props.onPress();
     });
 
     expect(
-      renderer.root.findAllByProps({children: '2 Seats: A1, B2'}).length,
-    ).toBeGreaterThan(0);
+      renderer.root.findByProps({accessibilityLabel: 'Seat 1-1, Regular, available'}),
+    ).toBeTruthy();
   });
 
-  it('disables Continue when no seats are selected and enables it once a seat is picked', () => {
+  it('disables Proceed to pay when no seats are selected and enables it once a seat is picked', () => {
     const {renderer} = renderScreen();
-    const continueButtonBefore = renderer.root.findByProps({accessibilityLabel: 'Continue'});
-    expect(continueButtonBefore.props.accessibilityState.disabled).toBe(true);
+    const before = renderer.root.findByProps({accessibilityLabel: 'Proceed to pay'});
+    expect(before.props.accessibilityState.disabled).toBe(true);
 
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
     act(() => {
-      seatA1.props.onPress();
+      seat.props.onPress();
     });
 
-    const continueButtonAfter = renderer.root.findByProps({accessibilityLabel: 'Continue'});
-    expect(continueButtonAfter.props.accessibilityState.disabled).toBe(false);
+    const after = renderer.root.findByProps({accessibilityLabel: 'Proceed to pay'});
+    expect(after.props.accessibilityState.disabled).toBe(false);
   });
 
-  it('returns to Movie Detail when Continue is pressed with seats selected', () => {
+  it('returns to the previous screen when Proceed to pay is pressed with seats selected', () => {
     const {renderer, goBack} = renderScreen();
-    const seatA1 = renderer.root.findByProps({accessibilityLabel: 'Seat A1, available'});
+    const seat = renderer.root.findByProps({
+      accessibilityLabel: 'Seat 1-1, Regular, available',
+    });
     act(() => {
-      seatA1.props.onPress();
+      seat.props.onPress();
     });
 
-    const continueButton = renderer.root.findByProps({accessibilityLabel: 'Continue'});
+    const proceedButton = renderer.root.findByProps({accessibilityLabel: 'Proceed to pay'});
     act(() => {
-      continueButton.props.onPress();
+      proceedButton.props.onPress();
     });
 
     expect(goBack).toHaveBeenCalled();
   });
 
-  it('returns to Movie Detail when the back button is pressed', () => {
+  it('navigates back when the back button is pressed', () => {
     const {renderer, goBack} = renderScreen();
     const backButton = renderer.root.findByProps({accessibilityLabel: 'Go back'});
     act(() => {
       backButton.props.onPress();
     });
     expect(goBack).toHaveBeenCalled();
+  });
+
+  it('adjusts zoom when the zoom controls are pressed', () => {
+    const {renderer} = renderScreen();
+    const zoomInButton = renderer.root.findByProps({accessibilityLabel: 'Zoom in'});
+    expect(() => {
+      act(() => {
+        zoomInButton.props.onPress();
+      });
+    }).not.toThrow();
+
+    const zoomOutButton = renderer.root.findByProps({accessibilityLabel: 'Zoom out'});
+    expect(() => {
+      act(() => {
+        zoomOutButton.props.onPress();
+        zoomOutButton.props.onPress();
+      });
+    }).not.toThrow();
   });
 });

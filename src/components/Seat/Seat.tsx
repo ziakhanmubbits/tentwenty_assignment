@@ -8,6 +8,11 @@ interface SeatProps {
   onPress: (seatId: string) => void;
 }
 
+const TIER_LABEL: Record<SeatType['tier'], string> = {
+  regular: 'Regular',
+  vip: 'VIP',
+};
+
 function SeatComponent({seat, onPress}: SeatProps) {
   const isOccupied = seat.status === 'occupied';
 
@@ -17,16 +22,25 @@ function SeatComponent({seat, onPress}: SeatProps) {
     }
   }, [isOccupied, onPress, seat.id]);
 
+  const fillStyle =
+    seat.status === 'occupied'
+      ? styles.occupied
+      : seat.status === 'selected'
+        ? styles.selected
+        : seat.tier === 'vip'
+          ? styles.vip
+          : styles.regular;
+
   return (
     <Pressable
       onPress={handlePress}
       disabled={isOccupied}
       hitSlop={4}
       accessibilityRole="button"
-      accessibilityLabel={`Seat ${seat.id}, ${seat.status}`}
+      accessibilityLabel={`Seat ${seat.row}-${seat.number}, ${TIER_LABEL[seat.tier]}, ${seat.status}`}
       accessibilityState={{disabled: isOccupied, selected: seat.status === 'selected'}}
-      style={[styles.seat, styles[seat.status]]}>
-      <Text style={[styles.label, seat.status !== 'available' && styles.labelOnColor]}>
+      style={[styles.seat, fillStyle]}>
+      <Text style={[styles.label, seat.status !== 'occupied' && styles.labelOnColor]}>
         {seat.number}
       </Text>
     </Pressable>
@@ -37,26 +51,27 @@ export const Seat = React.memo(SeatComponent);
 
 const styles = StyleSheet.create({
   seat: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 3,
+    margin: 2,
   },
-  available: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+  regular: {
+    backgroundColor: colors.primary,
+  },
+  vip: {
+    backgroundColor: colors.accentPurple,
   },
   selected: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentGold,
   },
   occupied: {
     backgroundColor: colors.border,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
   },
   labelOnColor: {

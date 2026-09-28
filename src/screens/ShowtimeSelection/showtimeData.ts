@@ -26,6 +26,20 @@ export function generateDateOptions(startDate: Date, count: number): DateOption[
   });
 }
 
+export function formatFullDate(dateId: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(dateId));
+}
+
+export function shortenVenue(venue: string): string {
+  const parts = venue.split('+');
+  return parts[parts.length - 1].trim();
+}
+
 export const MOCK_SHOWTIMES: Showtime[] = [
   {id: '1', time: '12:30', venue: 'Cinetech + Hall 1', priceLabel: 'From $50 or 2500 bonus'},
   {id: '2', time: '13:30', venue: 'Cinetech + Hall 2', priceLabel: 'From $75 or 3000 bonus'},
