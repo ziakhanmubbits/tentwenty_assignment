@@ -5,9 +5,9 @@ import {colors, spacing} from '../../theme';
 import {DashboardIcon, MediaLibraryIcon, MoreIcon, WatchIcon} from './TabIcons';
 
 const TABS = [
-  {key: 'dashboard', label: 'Dashboard', Icon: DashboardIcon},
+  {key: 'dashboard', label: 'Dashboard', Icon: MediaLibraryIcon},
   {key: 'watch', label: 'Watch', Icon: WatchIcon},
-  {key: 'library', label: 'Media Library', Icon: MediaLibraryIcon},
+  {key: 'library', label: 'Media Library', Icon: DashboardIcon},
   {key: 'more', label: 'More', Icon: MoreIcon},
 ] as const;
 
