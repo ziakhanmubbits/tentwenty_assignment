@@ -1,18 +1,18 @@
 import {
-  OCCUPIED_SEAT_IDS,
+  CENTER_BLOCK_SIZE,
+  LEFT_BLOCK_SIZE,
+  RIGHT_BLOCK_SIZE,
   ROW_COUNT,
-  SEATS_PER_ROW,
-  VIP_ROW,
   createInitialSeatLayout,
 } from '../seatLayout';
 
 describe('createInitialSeatLayout', () => {
-  it('creates the configured number of rows, each with the configured seat count', () => {
+  it('creates the configured number of rows, each with the configured column count', () => {
     const layout = createInitialSeatLayout();
 
     expect(layout).toHaveLength(ROW_COUNT);
     layout.forEach((row, index) => {
-      expect(row).toHaveLength(SEATS_PER_ROW);
+      expect(row).toHaveLength(LEFT_BLOCK_SIZE + CENTER_BLOCK_SIZE + RIGHT_BLOCK_SIZE);
       row.forEach(seat => expect(seat.row).toBe(String(index + 1)));
     });
   });
@@ -28,28 +28,24 @@ describe('createInitialSeatLayout', () => {
   it('marks the last row as VIP and every other row as regular', () => {
     const layout = createInitialSeatLayout();
 
-    layout.forEach(row => {
-      const expectedTier = row[0].row === VIP_ROW ? 'vip' : 'regular';
+    layout.forEach((row, index) => {
+      const expectedTier = index + 1 === ROW_COUNT ? 'vip' : 'regular';
       row.forEach(seat => expect(seat.tier).toBe(expectedTier));
     });
   });
 
-  it('marks exactly the configured seats as occupied and everything else available', () => {
+  it('never marks the VIP row as occupied or hidden', () => {
     const layout = createInitialSeatLayout();
-
-    layout.flat().forEach(seat => {
-      if (OCCUPIED_SEAT_IDS.has(seat.id)) {
-        expect(seat.status).toBe('occupied');
-      } else {
-        expect(seat.status).toBe('available');
-      }
-    });
+    const vipRow = layout[ROW_COUNT - 1];
+    expect(vipRow.every(seat => seat.status === 'available' && !seat.hidden)).toBe(true);
   });
 
-  it('never marks the VIP row as occupied', () => {
+  it('hides fewer seats on the front rows to form a narrower, theater-shaped block', () => {
     const layout = createInitialSeatLayout();
-    const vipRow = layout.find(row => row[0].row === VIP_ROW)!;
-    expect(vipRow.every(seat => seat.status === 'available')).toBe(true);
+    const frontRowVisible = layout[0].filter(seat => !seat.hidden).length;
+    const backRowVisible = layout[ROW_COUNT - 2].filter(seat => !seat.hidden).length;
+
+    expect(frontRowVisible).toBeLessThan(backRowVisible);
   });
 
   it('never marks a seat as selected initially', () => {

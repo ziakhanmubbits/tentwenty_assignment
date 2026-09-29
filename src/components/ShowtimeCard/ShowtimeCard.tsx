@@ -1,6 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {colors, spacing} from '../../theme';
+import {colors} from '../../theme';
 import type {Showtime} from '../../types/showtime';
 
 interface ShowtimeCardProps {
@@ -9,9 +9,100 @@ interface ShowtimeCardProps {
   onPress: (showtimeId: string) => void;
 }
 
-const PREVIEW_ROWS = 5;
-const PREVIEW_COLS = 8;
-const HIGHLIGHT_CELLS = new Set(['2-3', '2-4']);
+/* ---------- Seat map preview (Figma style) ---------- */
+
+const SEAT_ROWS = 11;
+const MID_COLS = 14;
+const SIDE_COLS = 4;
+const SEAT_SIZE = 4;
+const SEAT_GAP = 2;
+const BLOCK_GAP = 10;
+
+// how many seats each row has in the left/right blocks (gives the rounded blob shape)
+const SIDE_COUNTS = [2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 2];
+
+const SPECIAL_SEATS: Record<string, string> = {
+  'm-2-0': colors.accentTeal,
+  'm-2-13': colors.accentTeal,
+  'm-3-0': colors.accentPink,
+  'm-3-13': colors.accentPink,
+  'm-5-6': colors.accentPurple,
+  'm-5-7': colors.accentPurple,
+  'm-6-0': colors.accentTeal,
+  'm-6-13': colors.accentTeal,
+  'l-10-3': colors.accentTeal,
+  'r-10-0': colors.accentTeal,
+};
+
+function seatColor(block: 'l' | 'm' | 'r', row: number, col: number) {
+  const special = SPECIAL_SEATS[`${block}-${row}-${col}`];
+  if (special) {
+    return special;
+  }
+  // deterministic "taken" seats
+  const taken = ((row + 1) * (col + 3) * 7 + (block === 'm' ? 1 : 3)) % 5 < 2;
+  return taken ? colors.border : colors.primary;
+}
+
+function Seat({color}: {color: string}) {
+  return <View style={[styles.seat, {backgroundColor: color}]} />;
+}
+
+function SeatMapPreview() {
+  return (
+    <View style={styles.seatMap}>
+      {/* curved screen */}
+      <View style={styles.arcClip}>
+        <View style={styles.arc} />
+      </View>
+
+      {Array.from({length: SEAT_ROWS}).map((_, row) => {
+        const sideCount = SIDE_COUNTS[row];
+        return (
+          <View key={row} style={styles.seatRow}>
+            <View style={[styles.sideBlock, styles.sideBlockLeft]}>
+              {Array.from({length: sideCount}).map((__, i) => {
+                const col = SIDE_COLS - sideCount + i;
+                return <Seat key={col} color={seatColor('l', row, col)} />;
+              })}
+            </View>
+            <View style={styles.midBlock}>
+              {Array.from({length: MID_COLS}).map((__, col) => (
+                <Seat key={col} color={seatColor('m', row, col)} />
+              ))}
+            </View>
+            <View style={[styles.sideBlock, styles.sideBlockRight]}>
+              {Array.from({length: sideCount}).map((__, col) => (
+                <Seat key={col} color={seatColor('r', row, col)} />
+              ))}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ---------- Price label: "From 50$ or 2500 bonus" ---------- */
+
+function PriceLabel({label}: {label: string}) {
+  const match = /^From\s+(.+?)\s+or\s+(.+)$/i.exec(label);
+  if (!match) {
+    return <Text style={styles.price}>{label}</Text>;
+  }
+  // "$50" -> "50$" like Figma
+  const price = match[1].replace(/^\$(\d+(?:\.\d+)?)$/, '$1$');
+  return (
+    <Text style={styles.price}>
+      {'From '}
+      <Text style={styles.priceBold}>{price}</Text>
+      {' or '}
+      <Text style={styles.priceBold}>{match[2]}</Text>
+    </Text>
+  );
+}
+
+/* ---------- Card ---------- */
 
 function ShowtimeCardComponent({showtime, isSelected, onPress}: ShowtimeCardProps) {
   return (
@@ -26,24 +117,9 @@ function ShowtimeCardComponent({showtime, isSelected, onPress}: ShowtimeCardProp
         accessibilityLabel={`Showtime ${showtime.time} at ${showtime.venue}`}
         accessibilityState={{selected: isSelected}}
         style={[styles.card, isSelected && styles.cardSelected]}>
-        <View style={styles.screenIndicator} />
-        <View style={styles.previewGrid}>
-          {Array.from({length: PREVIEW_ROWS}).map((__, row) => (
-            <View key={row} style={styles.previewRow}>
-              {Array.from({length: PREVIEW_COLS}).map((_, col) => (
-                <View
-                  key={col}
-                  style={[
-                    styles.previewDot,
-                    HIGHLIGHT_CELLS.has(`${row}-${col}`) && styles.previewDotHighlight,
-                  ]}
-                />
-              ))}
-            </View>
-          ))}
-        </View>
+        <SeatMapPreview />
       </Pressable>
-      <Text style={styles.price}>{showtime.priceLabel}</Text>
+      <PriceLabel label={showtime.priceLabel} />
     </View>
   );
 }
@@ -52,60 +128,87 @@ export const ShowtimeCard = React.memo(ShowtimeCardComponent);
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: 220,
-    gap: spacing.xs,
+    width: 249,
+    gap: 10,
   },
   timeRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: spacing.xs,
+    gap: 10,
   },
   time: {
     color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
   },
   venue: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 14,
   },
   card: {
+    height: 145,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    padding: spacing.sm,
+    borderRadius: 12,
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   cardSelected: {
     borderColor: colors.primary,
   },
-  screenIndicator: {
-    width: '60%',
-    height: 4,
-    borderTopLeftRadius: 100,
-    borderTopRightRadius: 100,
-    backgroundColor: colors.border,
-    marginBottom: spacing.xs,
+  seatMap: {
+    alignItems: 'center',
+    gap: SEAT_GAP,
   },
-  previewGrid: {
-    gap: 3,
+  arcClip: {
+    width: 150,
+    height: 10,
+    overflow: 'hidden',
+    marginBottom: 4,
   },
-  previewRow: {
+  arc: {
+    position: 'absolute',
+    top: 0,
+    left: -225,
+    width: 600,
+    height: 600,
+    borderRadius: 300,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    opacity: 0.6,
+  },
+  seatRow: {
     flexDirection: 'row',
-    gap: 3,
+    alignItems: 'center',
+    gap: BLOCK_GAP,
   },
-  previewDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
+  sideBlock: {
+    width: SIDE_COLS * SEAT_SIZE + (SIDE_COLS - 1) * SEAT_GAP,
+    flexDirection: 'row',
+    gap: SEAT_GAP,
   },
-  previewDotHighlight: {
-    backgroundColor: colors.accentPurple,
+  sideBlockLeft: {
+    justifyContent: 'flex-end',
+  },
+  sideBlockRight: {
+    justifyContent: 'flex-start',
+  },
+  midBlock: {
+    flexDirection: 'row',
+    gap: SEAT_GAP,
+  },
+  seat: {
+    width: SEAT_SIZE,
+    height: SEAT_SIZE,
+    borderRadius: 1.5,
   },
   price: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
+  },
+  priceBold: {
+    color: colors.textPrimary,
+    fontWeight: '700',
   },
 });

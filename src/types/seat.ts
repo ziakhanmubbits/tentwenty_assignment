@@ -7,4 +7,5 @@ export interface Seat {
   number: number;
   status: SeatStatus;
   tier: SeatTier;
+  hidden: boolean;
 }

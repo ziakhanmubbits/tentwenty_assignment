@@ -1,57 +1,44 @@
-import type {Seat} from '../../types/seat';
+import type {Seat as SeatType} from '../../types/seat';
 
+export const LEFT_BLOCK_SIZE = 5;
+export const CENTER_BLOCK_SIZE = 14;
+export const RIGHT_BLOCK_SIZE = 5;
 export const ROW_COUNT = 10;
-export const LEFT_BLOCK_SIZE = 3;
-export const CENTER_BLOCK_SIZE = 12;
-export const RIGHT_BLOCK_SIZE = 3;
-export const SEATS_PER_ROW = LEFT_BLOCK_SIZE + CENTER_BLOCK_SIZE + RIGHT_BLOCK_SIZE;
-export const VIP_ROW = String(ROW_COUNT);
 
-export const SEAT_PRICES = {
+export const SEAT_PRICES: Record<SeatType['tier'], number> = {
   regular: 50,
   vip: 150,
-} as const;
+};
 
-export const OCCUPIED_SEAT_IDS: ReadonlySet<string> = new Set([
-  '1-3',
-  '1-4',
-  '1-13',
-  '2-6',
-  '2-7',
-  '3-1',
-  '3-2',
-  '3-9',
-  '4-11',
-  '4-12',
-  '5-4',
-  '5-5',
-  '5-16',
-  '6-1',
-  '6-10',
-  '6-11',
-  '7-7',
-  '7-8',
-  '8-3',
-  '8-14',
-  '9-2',
-  '9-9',
-  '9-10',
-]);
+// how many seats really exist on each side per row (the rest is empty space, like Figma)
+const LEFT_VISIBLE = [2, 4, 4, 4, 5, 5, 5, 5, 5, 5];
+const RIGHT_VISIBLE = [2, 4, 4, 4, 5, 5, 5, 5, 5, 5];
 
-export function createInitialSeatLayout(): Seat[][] {
-  return Array.from({length: ROW_COUNT}, (__, rowIndex) => {
-    const row = String(rowIndex + 1);
-    const isVipRow = row === VIP_ROW;
+const TOTAL_COLS = LEFT_BLOCK_SIZE + CENTER_BLOCK_SIZE + RIGHT_BLOCK_SIZE;
 
-    return Array.from({length: SEATS_PER_ROW}, (_, seatIndex) => {
-      const number = seatIndex + 1;
-      const id = `${row}-${number}`;
+function isHidden(rowIndex: number, col: number) {
+  if (col < LEFT_BLOCK_SIZE) {
+    return col < LEFT_BLOCK_SIZE - LEFT_VISIBLE[rowIndex];
+  }
+  if (col >= LEFT_BLOCK_SIZE + CENTER_BLOCK_SIZE) {
+    return col - LEFT_BLOCK_SIZE - CENTER_BLOCK_SIZE >= RIGHT_VISIBLE[rowIndex];
+  }
+  return false;
+}
+
+export function createInitialSeatLayout(): SeatType[][] {
+  return Array.from({length: ROW_COUNT}, (_, rowIndex) => {
+    const row = rowIndex + 1;
+    const isVipRow = row === ROW_COUNT;
+    return Array.from({length: TOTAL_COLS}, (__, col) => {
+      const occupied = !isVipRow && (row * 5 + col * 3 + Math.floor(col / 2)) % 4 === 0;
       return {
-        id,
-        row,
-        number,
+        id: `${row}-${col + 1}`,
+        row: String(row),
+        number: col + 1,
+        status: occupied ? 'occupied' : 'available',
         tier: isVipRow ? 'vip' : 'regular',
-        status: !isVipRow && OCCUPIED_SEAT_IDS.has(id) ? 'occupied' : 'available',
+        hidden: isHidden(rowIndex, col),
       };
     });
   });

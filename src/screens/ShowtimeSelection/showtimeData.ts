@@ -41,7 +41,7 @@ export function shortenVenue(venue: string): string {
 }
 
 export const MOCK_SHOWTIMES: Showtime[] = [
-  {id: '1', time: '12:30', venue: 'Cinetech + Hall 1', priceLabel: 'From $50 or 2500 bonus'},
-  {id: '2', time: '13:30', venue: 'Cinetech + Hall 2', priceLabel: 'From $75 or 3000 bonus'},
-  {id: '3', time: '16:00', venue: 'Cinetech + Hall 1', priceLabel: 'From $50 or 2500 bonus'},
+  {id: '1', time: '12:30', venue: 'Cinetech + Hall 1', priceLabel: 'From 50$ or 2500 bonus'},
+  {id: '2', time: '13:30', venue: 'Cinetech + Hall 2', priceLabel: 'From 75$ or 3000 bonus'},
+  {id: '3', time: '16:00', venue: 'Cinetech + Hall 1', priceLabel: 'From 50$ or 2500 bonus'},
 ];

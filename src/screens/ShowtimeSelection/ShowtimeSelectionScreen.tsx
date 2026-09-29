@@ -30,30 +30,37 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
   }, [movieId, movieTitle, navigation, selectedDateId, selectedShowtimeId]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={8}
-          style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {movieTitle}
-          </Text>
-          {releaseDateLabel && (
-            <Text style={styles.headerSubtitle}>{`In Theaters ${releaseDateLabel}`}</Text>
-          )}
+    <View style={styles.container}>
+      {/* White header (status bar area included) */}
+      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={styles.backButton}>
+            <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+          </Pressable>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {movieTitle}
+            </Text>
+            {releaseDateLabel && (
+              <Text style={styles.headerSubtitle}>{`In Theaters ${releaseDateLabel}`}</Text>
+            )}
+          </View>
+          <View style={styles.backButtonSpacer} />
         </View>
-        <View style={styles.backButtonSpacer} />
-      </View>
+      </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>Date</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalContent}
+          style={styles.dateScroll}>
           <View style={styles.dateRow}>
             {dateOptions.map(option => {
               const isSelected = option.id === selectedDateId;
@@ -65,8 +72,7 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
                   accessibilityLabel={option.label}
                   accessibilityState={{selected: isSelected}}
                   style={[styles.datePill, isSelected && styles.datePillSelected]}>
-                  <Text
-                    style={[styles.datePillText, isSelected && styles.datePillTextSelected]}>
+                  <Text style={[styles.datePillText, isSelected && styles.datePillTextSelected]}>
                     {option.label}
                   </Text>
                 </Pressable>
@@ -75,7 +81,11 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
           </View>
         </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalContent}
+          style={styles.showtimeScroll}>
           <View style={styles.showtimeRow}>
             {MOCK_SHOWTIMES.map(showtime => (
               <ShowtimeCard
@@ -89,14 +99,16 @@ export function ShowtimeSelectionScreen({navigation, route}: Props) {
         </ScrollView>
       </ScrollView>
 
-      <Pressable
-        onPress={handleSelectSeats}
-        accessibilityRole="button"
-        accessibilityLabel="Select Seats"
-        style={styles.selectSeatsButton}>
-        <Text style={styles.selectSeatsButtonText}>Select Seats</Text>
-      </Pressable>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']}>
+        <Pressable
+          onPress={handleSelectSeats}
+          accessibilityRole="button"
+          accessibilityLabel="Select Seats"
+          style={styles.selectSeatsButton}>
+          <Text style={styles.selectSeatsButtonText}>Select Seats</Text>
+        </Pressable>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -105,12 +117,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  headerSafeArea: {
+    backgroundColor: colors.white,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   backButton: {
     width: 44,
@@ -124,66 +141,83 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flex: 1,
     alignItems: 'center',
+    gap: 2,
   },
   headerTitle: {
     color: colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   headerSubtitle: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   content: {
-    padding: spacing.md,
-    gap: spacing.md,
+    paddingTop: 88, // Figma: big gap between header and "Date"
+    paddingBottom: spacing.md,
   },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '500',
+    paddingHorizontal: 20,
+  },
+  horizontalContent: {
+    paddingHorizontal: 20,
+  },
+  dateScroll: {
+    marginTop: 16,
+    overflow: 'visible',
   },
   dateRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: 12,
+    paddingVertical: 8, // room for the selected-pill glow
   },
   datePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: colors.border,
-    minHeight: 44,
+    width: 67,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EFEFF4',
     alignItems: 'center',
     justifyContent: 'center',
   },
   datePillSelected: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   datePillText: {
     color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   datePillTextSelected: {
     color: colors.white,
   },
+  showtimeScroll: {
+    marginTop: 32,
+  },
   showtimeRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: 10,
   },
   selectSeatsButton: {
-    margin: spacing.md,
+    marginHorizontal: 26,
+    marginBottom: 26,
     backgroundColor: colors.primary,
-    borderRadius: 24,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    borderRadius: 10,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectSeatsButtonText: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
