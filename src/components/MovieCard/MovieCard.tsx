@@ -37,7 +37,7 @@ export const MovieCard = React.memo(MovieCardComponent);
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: colors.white,
     marginBottom: spacing.md,
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: 3 / 2,
   },
   imageFallback: {
     backgroundColor: colors.border,
@@ -58,8 +58,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: 'rgba(46, 39, 57, 0.55)',
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+    backgroundColor: 'rgba(46, 39, 57, 0.45)',
   },
   title: {
     color: colors.white,
