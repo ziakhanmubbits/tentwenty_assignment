@@ -90,5 +90,31 @@ export function useUpcomingMovies() {
     load();
   }, [load]);
 
-  return {...state, retry: load};
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        return;
+      }
+      const movies = await fetchUpcomingMovies();
+      await saveUpcomingMoviesCache(movies);
+      setState({
+        status: movies.length === 0 ? 'empty' : 'success',
+        movies,
+        error: null,
+        isOffline: false,
+        cachedAt: null,
+      });
+    } catch {
+      // Keep whatever is already on screen; a pull-to-refresh failure
+      // shouldn't disrupt a list the user can already see.
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  return {...state, retry: load, refresh, isRefreshing};
 }

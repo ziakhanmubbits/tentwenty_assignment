@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactTestRenderer, {act} from 'react-test-renderer';
-import {Text} from 'react-native';
+import {RefreshControl, Text} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import {MovieListScreen} from '../MovieListScreen';
@@ -239,6 +239,67 @@ describe('MovieListScreen', () => {
     });
 
     expect(navigate).toHaveBeenCalledWith('MovieDetail', {movieId: 1});
+  });
+
+  it('refreshes the list via pull-to-refresh and shows the new data', async () => {
+    mockFetchUpcomingMovies.mockResolvedValueOnce(mockMovies);
+    mockFetchUpcomingMovies.mockResolvedValueOnce([cachedMovie]);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const refreshControl = renderer.root.findByType(RefreshControl);
+    expect(refreshControl.props.refreshing).toBe(false);
+
+    await act(async () => {
+      refreshControl.props.onRefresh();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockFetchUpcomingMovies).toHaveBeenCalledTimes(2);
+    expect(mockSaveCache).toHaveBeenCalledWith([cachedMovie]);
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Jojo Rabbit');
+  });
+
+  it('keeps the current list visible when a pull-to-refresh request fails', async () => {
+    mockFetchUpcomingMovies.mockResolvedValueOnce(mockMovies);
+    mockFetchUpcomingMovies.mockRejectedValueOnce(new Error('network down'));
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    const refreshControl = renderer.root.findByType(RefreshControl);
+    await act(async () => {
+      refreshControl.props.onRefresh();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Free Guy');
+    expect(texts).toContain("The King's Man");
+    expect(texts).not.toContain("Couldn't load movies.");
+  });
+
+  it('does not attempt a network request when pulling to refresh while offline', async () => {
+    mockFetchUpcomingMovies.mockResolvedValueOnce(mockMovies);
+    const {renderer} = renderScreen();
+    await flushMicrotasks();
+
+    mockNetInfoFetch.mockResolvedValueOnce({isConnected: false} as never);
+    const refreshControl = renderer.root.findByType(RefreshControl);
+    await act(async () => {
+      refreshControl.props.onRefresh();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockFetchUpcomingMovies).toHaveBeenCalledTimes(1);
+    const texts = renderer.root.findAllByType(Text).map(node => node.props.children);
+    expect(texts).toContain('Free Guy');
   });
 
   it('navigates to Movie Search when the header search icon is pressed', async () => {

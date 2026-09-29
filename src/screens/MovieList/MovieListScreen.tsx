@@ -1,6 +1,6 @@
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import React, {useCallback} from 'react';
-import {FlatList, StyleSheet, View} from 'react-native';
+import {FlatList, RefreshControl, StyleSheet, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {EmptyState} from '../../components/EmptyState';
 import {ErrorState} from '../../components/ErrorState';
@@ -16,7 +16,8 @@ import type {Movie} from '../../types/movie';
 type Props = NativeStackScreenProps<RootStackParamList, 'MovieList'>;
 
 export function MovieListScreen({navigation}: Props) {
-  const {status, movies, error, isOffline, cachedAt, retry} = useUpcomingMovies();
+  const {status, movies, error, isOffline, cachedAt, retry, refresh, isRefreshing} =
+    useUpcomingMovies();
 
   const handleSelectMovie = useCallback(
     (movie: Movie) => {
@@ -52,6 +53,14 @@ export function MovieListScreen({navigation}: Props) {
             keyExtractor={item => String(item.id)}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={refresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
           />
         )}
       </View>
