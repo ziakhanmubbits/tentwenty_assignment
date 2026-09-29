@@ -1,14 +1,14 @@
-import {Ionicons} from '@react-native-vector-icons/ionicons/static';
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {colors, spacing} from '../../theme';
+import {DashboardIcon, MediaLibraryIcon, MoreIcon, WatchIcon} from './TabIcons';
 
 const TABS = [
-  {key: 'dashboard', label: 'Dashboard', icon: 'grid-outline'},
-  {key: 'watch', label: 'Watch', icon: 'play-circle-outline'},
-  {key: 'library', label: 'Media Library', icon: 'library-outline'},
-  {key: 'more', label: 'More', icon: 'menu-outline'},
+  {key: 'dashboard', label: 'Dashboard', Icon: DashboardIcon},
+  {key: 'watch', label: 'Watch', Icon: WatchIcon},
+  {key: 'library', label: 'Media Library', Icon: MediaLibraryIcon},
+  {key: 'more', label: 'More', Icon: MoreIcon},
 ] as const;
 
 export type BottomTabKey = (typeof TABS)[number]['key'];
@@ -25,6 +25,7 @@ export function BottomTabBar({activeTab, onTabPress}: BottomTabBarProps) {
     <View style={[styles.container, {paddingBottom: insets.bottom || spacing.sm}]}>
       {TABS.map(tab => {
         const isActive = tab.key === activeTab;
+        const iconColor = isActive ? colors.white : colors.textSecondary;
         return (
           <Pressable
             key={tab.key}
@@ -33,11 +34,7 @@ export function BottomTabBar({activeTab, onTabPress}: BottomTabBarProps) {
             accessibilityLabel={tab.label}
             accessibilityState={{selected: isActive}}
             style={styles.tab}>
-            <Ionicons
-              name={tab.icon}
-              size={24}
-              color={isActive ? colors.white : colors.textSecondary}
-            />
+            <tab.Icon color={iconColor} size={24} />
             <Text style={[styles.label, isActive && styles.labelActive]}>
               {tab.label}
             </Text>
