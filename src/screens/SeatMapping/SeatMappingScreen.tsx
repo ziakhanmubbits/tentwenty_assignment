@@ -119,7 +119,6 @@ export function SeatMappingScreen({navigation, route}: Props) {
 
   return (
     <View style={styles.container}>
-      {/* White header */}
       <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
         <View style={styles.header}>
           <Pressable

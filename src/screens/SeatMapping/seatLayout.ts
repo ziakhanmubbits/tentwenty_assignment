@@ -10,7 +10,7 @@ export const SEAT_PRICES: Record<SeatType['tier'], number> = {
   vip: 150,
 };
 
-// how many seats really exist on each side per row (the rest is empty space, like Figma)
+
 const LEFT_VISIBLE = [2, 4, 4, 4, 5, 5, 5, 5, 5, 5];
 const RIGHT_VISIBLE = [2, 4, 4, 4, 5, 5, 5, 5, 5, 5];
 

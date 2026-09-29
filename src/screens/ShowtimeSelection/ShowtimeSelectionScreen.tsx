@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   content: {
-    paddingTop: 88, // Figma: big gap between header and "Date"
+    paddingTop: 88, 
     paddingBottom: spacing.md,
   },
   sectionTitle: {
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingVertical: 8, // room for the selected-pill glow
+    paddingVertical: 8, 
   },
   datePill: {
     width: 67,

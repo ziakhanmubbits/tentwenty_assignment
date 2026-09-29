@@ -109,8 +109,6 @@ export function useUpcomingMovies() {
         cachedAt: null,
       });
     } catch {
-      // Keep whatever is already on screen; a pull-to-refresh failure
-      // shouldn't disrupt a list the user can already see.
     } finally {
       setIsRefreshing(false);
     }

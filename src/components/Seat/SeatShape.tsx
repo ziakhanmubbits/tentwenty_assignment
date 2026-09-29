@@ -6,7 +6,6 @@ interface SeatShapeProps {
   width: number;
 }
 
-/** Small cinema-seat icon: rounded body + base line */
 export function SeatShape({color, width}: SeatShapeProps) {
   return (
     <View style={styles.shape}>

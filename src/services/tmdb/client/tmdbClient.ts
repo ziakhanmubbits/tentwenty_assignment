@@ -21,9 +21,22 @@ export async function tmdbGet<T>(
     ),
   });
 
-  const response = await fetch(`${BASE_URL}${path}?${query.toString()}`, {signal});
+  console.log('[tmdb] request', path, params);
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}?${query.toString()}`, {signal});
+  } catch (networkError) {
+  
+    console.log('[tmdb] network error (fetch threw before reaching TMDb)', path, networkError);
+    throw networkError;
+  }
+
+  console.log('[tmdb] response', path, response.status);
 
   if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    console.log('[tmdb] error body', path, response.status, body);
     throw new TmdbRequestError(
       `TMDb request to ${path} failed`,
       response.status,

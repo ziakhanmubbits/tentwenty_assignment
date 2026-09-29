@@ -9,7 +9,6 @@ interface ShowtimeCardProps {
   onPress: (showtimeId: string) => void;
 }
 
-/* ---------- Seat map preview (Figma style) ---------- */
 
 const SEAT_ROWS = 11;
 const MID_COLS = 14;
@@ -18,7 +17,7 @@ const SEAT_SIZE = 4;
 const SEAT_GAP = 2;
 const BLOCK_GAP = 10;
 
-// how many seats each row has in the left/right blocks (gives the rounded blob shape)
+
 const SIDE_COUNTS = [2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 2];
 
 const SPECIAL_SEATS: Record<string, string> = {
@@ -83,7 +82,6 @@ function SeatMapPreview() {
   );
 }
 
-/* ---------- Price label: "From 50$ or 2500 bonus" ---------- */
 
 function PriceLabel({label}: {label: string}) {
   const match = /^From\s+(.+?)\s+or\s+(.+)$/i.exec(label);
@@ -102,7 +100,6 @@ function PriceLabel({label}: {label: string}) {
   );
 }
 
-/* ---------- Card ---------- */
 
 function ShowtimeCardComponent({showtime, isSelected, onPress}: ShowtimeCardProps) {
   return (

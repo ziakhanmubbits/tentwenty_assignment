@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
-    backgroundColor: 'rgba(46, 39, 57, 0.45)',
   },
   title: {
     color: colors.white,

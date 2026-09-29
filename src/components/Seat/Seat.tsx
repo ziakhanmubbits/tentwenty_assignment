@@ -10,7 +10,7 @@ interface SeatProps {
   zoom?: number;
 }
 
-const BASE_UNIT = 13; // pitch of one seat column at zoom 1
+const BASE_UNIT = 13; 
 const BASE_SEAT_WIDTH = 7;
 const BASE_ROW_HEIGHT = 15.5;
 

@@ -12,9 +12,6 @@ const testSafeAreaMetrics = {
   insets: {top: 47, left: 0, right: 0, bottom: 34},
 };
 
-// Center-block seats (never hidden by the theater-shaped layout), one regular
-// available, one regular occupied, and one VIP available, per the deterministic
-// formula in seatLayout.ts.
 const REGULAR_AVAILABLE_LABEL = 'Seat 1-6, Regular, available';
 const REGULAR_OCCUPIED_LABEL = 'Seat 1-10, Regular, occupied';
 const VIP_AVAILABLE_LABEL = 'Seat 10-6, VIP, available';
