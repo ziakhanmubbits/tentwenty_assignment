@@ -5,10 +5,10 @@ import {colors, spacing} from '../../theme';
 import {DashboardIcon, MediaLibraryIcon, MoreIcon, WatchIcon} from './TabIcons';
 
 const TABS = [
-  {key: 'dashboard', label: 'Dashboard', Icon: MediaLibraryIcon},
-  {key: 'watch', label: 'Watch', Icon: WatchIcon},
-  {key: 'library', label: 'Media Library', Icon: DashboardIcon},
-  {key: 'more', label: 'More', Icon: MoreIcon},
+  {key: 'dashboard', label: 'Dashboard', Icon: MediaLibraryIcon, size: 28},
+  {key: 'watch', label: 'Watch', Icon: WatchIcon, size: 26},
+  {key: 'library', label: 'Media Library', Icon: DashboardIcon, size: 26},
+  {key: 'more', label: 'More', Icon: MoreIcon, size: 26},
 ] as const;
 
 export type BottomTabKey = (typeof TABS)[number]['key'];
@@ -34,7 +34,9 @@ export function BottomTabBar({activeTab, onTabPress}: BottomTabBarProps) {
             accessibilityLabel={tab.label}
             accessibilityState={{selected: isActive}}
             style={styles.tab}>
-            <tab.Icon color={iconColor} size={24} />
+            <View style={styles.iconSlot}>
+              <tab.Icon color={iconColor} size={tab.size} />
+            </View>
             <Text style={[styles.label, isActive && styles.labelActive]}>
               {tab.label}
             </Text>
@@ -58,6 +60,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     minHeight: 44,
+  },
+  iconSlot: {
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     fontSize: 11,
